@@ -33,7 +33,7 @@
 
 <!-- GAME OVER 画面 -->
 <div id="overlay">
-  <h1>大家くんとの1on1ミーティング開催決定！！</h1>
+  <h1>大家くんとの1on1ミーティング開催！！</h1>
   <button id="retry">Retry</button>
 </div>
 
@@ -85,21 +85,36 @@ class Player{
   draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}
 }
 
-class Ishibesawa{
-  constructor(){
-    this.r=20;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
-    this.speed=1.5;this.dirTimer=0;this.changeDir();
-  }
-  changeDir(){const a=Math.random()*Math.PI*2;
-    this.vx=Math.cos(a)*this.speed;this.vy=Math.sin(a)*this.speed;}
-  update(dt){
-    this.dirTimer+=dt;if(this.dirTimer>3000){this.dirTimer=0;this.changeDir();}
-    this.x+=this.vx;this.y+=this.vy;
-    if(this.x<this.r||this.x>cvs.width-this.r) this.vx*=-1;
-    if(this.y<this.r||this.y>cvs.height-this.r) this.vy*=-1;
-  }
-  draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
-}
+ class Ishibesawa{
+   constructor(){
+     this.r = 20;
+     this.x = Math.random()*cvs.width;
+     this.y = Math.random()*cvs.height;
+-    this.speed   = 1.5;       // ★旧値
++    this.speed   = 4.0;       // ★3 倍弱にアップ
+     this.dirTimer= 0;
+-    this.changeDirInterval = 3000;  // 3 秒ごと方向転換
++    this.changeDirInterval = 1500;  // 1.5 秒ごと方向転換
+     this.changeDir();
+   }
+   changeDir(){
+     const a=Math.random()*Math.PI*2;
+     this.vx=Math.cos(a)*this.speed;
+     this.vy=Math.sin(a)*this.speed;
+   }
+   update(dt){
+     this.dirTimer+=dt;
+     if(this.dirTimer>this.changeDirInterval){
+       this.dirTimer=0; this.changeDir();
+     }
+     this.x+=this.vx; this.y+=this.vy;
+
+     // 端で反射
+     if(this.x<this.r||this.x>cvs.width-this.r) this.vx*=-1;
+     if(this.y<this.r||this.y>cvs.height-this.r) this.vy*=-1;
+   }
+   draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
+ }
 
 class Ohyakaisei{
   constructor(x,y){this.r=24;this.x=x;this.y=y;this.speed=2.2;}
