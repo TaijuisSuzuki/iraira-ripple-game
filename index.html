@@ -2,44 +2,60 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>Iraira Ripple Game – Plus</title>
+<title>Iraira Ripple Game – Plus (v3)</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#111;color:#fff;font-family:sans-serif}
-  /* ---------- 上部 UI ---------- */
+  /*----------- 上部 UI -----------*/
   #ui{
     position:fixed;top:10px;left:50%;transform:translateX(-50%);
-    z-index:5;font-size:22px;text-align:center;pointer-events:none;
+    z-index:5;font-size:22px;text-align:center;pointer-events:none
   }
-  /* ---------- GAME OVER オーバーレイ ---------- */
-  #overlay{
-    position:fixed;inset:0;display:none;
-    flex-direction:column;justify-content:flex-start;align-items:center;
-    background:rgba(0,0,0,.8);z-index:20;animation:fade .3s forwards;
+  /*----------- 共有: フルスクリーン画面 -----------*/
+  .screen{
+    position:fixed;inset:0;display:flex;flex-direction:column;
+    justify-content:flex-start;align-items:center;
+    background:rgba(0,0,0,.85);z-index:20;animation:fade .4s forwards
   }
   @keyframes fade{from{opacity:0}to{opacity:1}}
-  #overlay h1{
-    font-size:64px;line-height:1.2;text-align:center;
-    margin:8vh 0 20px;letter-spacing:2px;
-  }
-  #overlay p{font-size:28px;margin:0 0 40px}
-  #retry{
+  .screen h1{font-size:64px;margin:8vh 0 20px;text-align:center}
+  .screen p{max-width:680px;font-size:20px;line-height:1.5;margin:0 20px 32px;text-align:left}
+  .btn{
     font-size:32px;padding:14px 60px;border:none;border-radius:8px;
-    background:#e22;cursor:pointer;color:#fff;
+    background:#e22;color:#fff;cursor:pointer
   }
-  #retry:hover{background:#ff4444}
+  .btn:hover{background:#ff4444}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<!-- 上部 UI -->
-<div id="ui">Loading…</div>
+<!-- 上部 UI（タイマー・スコア等） -->
+<div id="ui" style="display:none">Loading…</div>
 
-<!-- GAME OVER 画面 -->
-<div id="overlay">
+<!--===== タイトル画面 =====-->
+<div id="startScreen" class="screen">
+  <h1>Iraira Ripple Game – Plus</h1>
+  <p>
+    【ルール】<br>
+    ● マウスでプレイヤーを操作。<br>
+    ● 赤いオーラは時間とともに広がり続け、<b>石部沢</b>が触れると
+       <b>大家くん (Ohya)</b> が最大 3 体まで出現します。<br>
+    ● Ohya に 5 秒追われ続けると自然に消滅しますが、
+       接触すると❤が 1 つ減ります (3 回でゲームオーバー)。<br>
+    ● タバコ / ビールを取るとオーラが半分になり
+       +200 スコア。3 秒ごとにどこかに出現します。<br>
+    ● 生存 1 秒ごと +10 スコア。20 秒ごとに Lv が上がり
+       敵とオーラが少しずつ速くなります。<br><br>
+    目指せハイスコア！
+  </p>
+  <button id="startBtn" class="btn">START</button>
+</div>
+
+<!--===== GAME OVER 画面 =====-->
+<div id="overlay" class="screen" style="display:none">
   <h1>大家くんとの1on1ミーティング開催決定！！</h1>
   <p id="finalScore"></p>
-  <button id="retry">Retry</button>
+  <button id="retry" class="btn">Retry</button>
 </div>
 
 <script>
@@ -69,230 +85,118 @@ function resize(){cvs.width=innerWidth;cvs.height=innerHeight;}resize();
 addEventListener('resize',resize);
 
 let mouse={x:cvs.width/2,y:cvs.height/2};
-cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();
-  mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
-cvs.ontouchmove=e=>{e.preventDefault();const r=cvs.getBoundingClientRect();
-  mouse.x=e.touches[0].clientX-r.left;mouse.y=e.touches[0].clientY-r.top;},{passive:false};
+cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
+cvs.ontouchmove=e=>{e.preventDefault();const r=cvs.getBoundingClientRect();mouse.x=e.touches[0].clientX-r.left;mouse.y=e.touches[0].clientY-r.top;},{passive:false};
 
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const drawCenter=(img,x,y,r)=>{
-  const s=(r*2)/img.width;
-  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
-  ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();
-};
+const drawCenter=(img,x,y,r)=>{const s=r*2/img.width;ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();};
 
 //==============================//
-// 3. パーティクル演出
+// 3. パーティクル
 //==============================//
 const particles=[];
-function spawnParticles(x,y,color){
-  for(let i=0;i<18;i++){
-    particles.push({
-      x,y,life:600,
-      vx:(Math.random()-0.5)*4,
-      vy:(Math.random()-0.5)*4,
-      col:color
-    });
-  }
-}
-function updateParticles(dt){
-  for(const p of particles){
-    p.x+=p.vx;p.y+=p.vy;p.life-=dt;
-  }
-  while(particles.length&&particles[0].life<=0)particles.shift();
-}
-function drawParticles(){
-  for(const p of particles){
-    ctx.fillStyle=p.col.replace('{a}',(p.life/600).toFixed(2));
-    ctx.fillRect(p.x,p.y,4,4);
-  }
-}
+function spawnParticles(x,y,col){for(let i=0;i<18;i++)particles.push({x,y,life:600,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,col});}
+function updateParticles(dt){for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.life-=dt;}while(particles.length&&particles[0].life<=0)particles.shift();}
+function drawParticles(){for(const p of particles){ctx.fillStyle=p.col.replace('{a}',(p.life/600).toFixed(2));ctx.fillRect(p.x,p.y,4,4);}}
 
 //==============================//
 // 4. エンティティ
 //==============================//
 class Player{
-  constructor(){this.r=40;this.x=cvs.width/2;this.y=cvs.height/2;}
+  constructor(){this.r=34;this.x=cvs.width/2;this.y=cvs.height/2;}
   update(){this.x=mouse.x;this.y=mouse.y;}
   draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}
 }
-
 class Ishibesawa{
-  constructor(spd){
-    this.r=34;
-    this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
-    this.baseSpeed=spd;this.speed=spd;
-    this.dirTimer=0;this.changeDirInt=1500;this.changeDir();
-  }
+  constructor(spd){this.r=28;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
+    this.speed=spd;this.dirTimer=0;this.cd=1500;this.turn();}
+  turn(){const a=Math.random()*Math.PI*2;this.vx=Math.cos(a)*this.speed;this.vy=Math.sin(a)*this.speed);}
   levelUp(){this.speed+=0.5;}
-  changeDir(){const a=Math.random()*Math.PI*2;
-    this.vx=Math.cos(a)*this.speed;this.vy=Math.sin(a)*this.speed;}
-  update(dt){
-    this.dirTimer+=dt;if(this.dirTimer>this.changeDirInt){this.dirTimer=0;this.changeDir();}
-    this.x+=this.vx;this.y+=this.vy;
-    if(this.x<this.r||this.x>cvs.width-this.r) this.vx*=-1;
-    if(this.y<this.r||this.y>cvs.height-this.r) this.vy*=-1;
-  }
+  update(dt){this.dirTimer+=dt;if(this.dirTimer>this.cd){this.dirTimer=0;this.turn();}
+    this.x+=this.vx;this.y+=this.vy;if(this.x<this.r||this.x>cvs.width-this.r)this.vx*=-1;
+    if(this.y<this.r||this.y>cvs.height-this.r)this.vy*=-1;}
   draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
 }
-
 class Ohyakaisei{
-  constructor(x,y,spd){
-    this.r=40;this.x=x;this.y=y;this.speed=spd;
-    this.life=5000; // 5s
-  }
+  constructor(x,y,spd){this.r=34;this.x=x;this.y=y;this.speed=spd;this.life=5000;}
   levelUp(){this.speed+=1;}
-  update(p,dt){
-    const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;
-    this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;
-    this.life-=dt;
-  }
+  update(p,dt){const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;this.life-=dt;}
   draw(){drawCenter(IMAGES.ohya,this.x,this.y,this.r);}
 }
-
 class Aura{
-  constructor(p){this.p=p;this.r=16;this.speed=0.02;}
+  constructor(p){this.p=p;this.r=14;this.speed=0.02;}
   levelUp(){this.speed+=0.003;}
   update(dt){this.r+=this.speed*dt;this.x=this.p.x;this.y=this.p.y;}
-  draw(){
-    ctx.save();ctx.translate(this.x,this.y);
-    const g=ctx.createRadialGradient(0,0,this.r*0.8,0,0,this.r);
-    g.addColorStop(0,'rgba(255,0,0,0)');
-    g.addColorStop(1,'rgba(255,0,0,.5)');
+  draw(){ctx.save();ctx.translate(this.x,this.y);
+    const g=ctx.createRadialGradient(0,0,this.r*0.8,0,0,this.r);g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,'rgba(255,0,0,.5)');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='rgba(255,0,0,.9)';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();ctx.restore();
-  }
+    ctx.strokeStyle='rgba(255,0,0,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();ctx.restore();}
 }
-
 class Item{
-  constructor(tp){
-    this.type=tp;this.r=28;
-    this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
-  }
-  update(){}
+  constructor(tp){this.type=tp;this.r=24;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;}
   draw(){drawCenter(this.type==='cig'?IMAGES.cig:IMAGES.beer,this.x,this.y,this.r);}
+  update(){}
 }
 
 //==============================//
 // 5. ゲームステート
 //==============================//
-let player,aura,ishibe,ohyArray,items;
-let state,timer,last,score,lv,lifecnt;
-const ui=document.getElementById('ui'),overlay=document.getElementById('overlay'),finalScore=document.getElementById('finalScore');
+let player,aura,ishibe,ohy,items,state,timer,last,score,lv,lifecnt,itemTimer;
+const ui=document.getElementById('ui'),overlay=document.getElementById('overlay'),
+      finalScore=document.getElementById('finalScore'),startScreen=document.getElementById('startScreen');
 
-const ITEM_INTERVAL = 3000;
-let itemTimer=0;
-const MAX_OHYA = 3;
+const ITEM_INTERVAL=3000,MAX_OHYA=3;
 
-function init(){
-  player=new Player();
-  aura =new Aura(player);
-  ishibe=new Ishibesawa(4.0);
-  ohyArray=[];
-  items=[];
-  state='PLAYING';timer=0;last=undefined;itemTimer=0;
-  score=0;lv=1;lifecnt=3;
-  overlay.style.display='none';
-  updateUI();
-  requestAnimationFrame(loop);
+function initGame(){
+  player=new Player();aura=new Aura(player);ishibe=new Ishibesawa(4);
+  ohy=[];items=[];state='PLAYING';timer=score=0;lv=1;lifecnt=3;itemTimer=0;last=undefined;
+  overlay.style.display='none';ui.style.display='block';updateUI();requestAnimationFrame(loop);
 }
 
-function updateUI(){
-  ui.textContent=
-    `Time: ${(timer/1000).toFixed(1)}  Score: ${Math.floor(score)}  ❤${'❤'.repeat(lifecnt)}  Lv:${lv}`;
-}
+function updateUI(){ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ❤${'❤'.repeat(lifecnt)}  Lv:${lv}`;}
 
-function spawnOhya(){
-  if(ohyArray.length>=MAX_OHYA)return;
+function spawnOhya(){if(ohy.length>=MAX_OHYA)return;
   const m=40,e=Math.floor(Math.random()*4);let x,y;
   if(e===0){x=Math.random()*cvs.width;y=-m;}
   if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
   if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
   if(e===3){x=-m;y=Math.random()*cvs.height;}
-  ohyArray.push(new Ohyakaisei(x,y,ishibe.speed*3));
-}
+  ohy.push(new Ohyakaisei(x,y,ishibe.speed*3));}
 
-function levelUp(){
-  lv++;
-  ishibe.levelUp(); aura.levelUp();
-  ohyArray.forEach(o=>o.levelUp());
-}
+function levelUp(){lv++;ishibe.levelUp();aura.levelUp();ohy.forEach(o=>o.levelUp());}
 
-function loop(t){
-  if(state!=='GAMEOVER')requestAnimationFrame(loop);
-  const dt=t-(last??t);last=t;
-  update(dt);draw();
-}
+function loop(t){if(state!=='GAMEOVER')requestAnimationFrame(loop);const dt=t-(last??t);last=t;update(dt);draw();}
 
 function update(dt){
   if(state!=='PLAYING')return;
-  timer+=dt; score+=dt*0.01;          // 1 秒あたり +10
-  player.update();aura.update(dt);ishibe.update(dt);
-  updateParticles(dt);
+  timer+=dt;score+=dt*0.01;player.update();aura.update(dt);ishibe.update(dt);updateParticles(dt);
+  if(Math.floor(timer/20000)+1>lv)levelUp();
 
-  // レベルアップ
-  if(Math.floor(timer/20000)+1>lv) levelUp();
+  itemTimer+=dt;if(itemTimer>ITEM_INTERVAL){itemTimer=0;items.push(new Item(Math.random()<.5?'cig':'beer'));}
 
-  // アイテム出現
-  itemTimer+=dt;
-  if(itemTimer>ITEM_INTERVAL){
-    itemTimer=0; items.push(new Item(Math.random()<0.5?'cig':'beer'));
-  }
+  items=items.filter(it=>{if(dist(it,player)<it.r+player.r){aura.r=Math.max(14,aura.r*0.5);score+=200;spawnParticles(it.x,it.y,'rgba(0,255,255,{a})');return false;}return true;});
 
-  // アイテム取得
-  items=items.filter(it=>{
-    if(dist(it,player)<it.r+player.r){
-      aura.r=Math.max(16,aura.r*0.5);
-      score+=200;
-      spawnParticles(it.x,it.y,'rgba(0,255,255,{a})');
-      return false;
-    } return true;
-  });
+  if(dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
 
-  // Ishibe 触れ → Ohya 追加
-  if(dist(ishibe,player)<aura.r+ishibe.r) spawnOhya();
+  ohy=ohy.filter(o=>{o.update(player,dt);if(o.life<=0){spawnParticles(o.x,o.y,'rgba(255,255,0,{a})');return false;}
+    if(dist(o,player)<o.r+player.r){lifecnt--;spawnParticles(o.x,o.y,'rgba(255,64,64,{a})');return false;}return true;});
 
-  // Ohya 更新
-  ohyArray=ohyArray.filter(o=>{
-    o.update(player,dt);
-    if(o.life<=0){ // 自然消滅
-      spawnParticles(o.x,o.y,'rgba(255,255,0,{a})');
-      return false;
-    }
-    // 衝突
-    if(dist(o,player)<o.r+player.r){
-      lifecnt--;
-      spawnParticles(o.x,o.y,'rgba(255,64,64,{a})');
-      return false;
-    }
-    return true;
-  });
-
-  if(lifecnt<=0) gameOver();
-  updateUI();
+  if(lifecnt<=0)gameOver();updateUI();
 }
 
-function draw(){
-  ctx.clearRect(0,0,cvs.width,cvs.height);
-  aura.draw();player.draw();ishibe.draw();
-  items.forEach(i=>i.draw());
-  ohyArray.forEach(o=>o.draw());
-  drawParticles();
-}
+function draw(){ctx.clearRect(0,0,cvs.width,cvs.height);aura.draw();player.draw();ishibe.draw();items.forEach(i=>i.draw());ohy.forEach(o=>o.draw());drawParticles();}
 
-function gameOver(){
-  state='GAMEOVER';
-  finalScore.textContent=`SCORE : ${Math.floor(score)}`;
-  overlay.style.display='flex';
-}
+function gameOver(){state='GAMEOVER';ui.style.display='none';finalScore.textContent=`SCORE : ${Math.floor(score)}`;overlay.style.display='flex';}
 
-document.getElementById('retry').onclick=init;
+document.getElementById('retry').onclick=()=>{overlay.style.display='none';initGame();};
+document.getElementById('startBtn').onclick=()=>{startScreen.style.display='none';initGame();};
 
 //==============================//
 // 6. 起動
 //==============================//
-loadImages(IMG_PATHS).then(init);
+loadImages(IMG_PATHS).then(()=>{ /* 画像ロード完了でタイトル画面を表示 */
+  startScreen.style.display='flex';
+});
 </script>
 </body>
 </html>
