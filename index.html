@@ -104,7 +104,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <div id="overlay" class="screen" style="display:none">
   <h1>GAME OVER</h1>
   <p id="finalScore"></p>
-  <p id="yourRank" style="font-size:22px;margin:6px 0 18px"></p><!-- ← 自分の順位 -->
+  <p id="yourRank" style="font-size:22px;margin:6px 0 18px"></p>
   <p id="meetingMsg" class="meeting"></p>
 
   <h2>GLOBAL RANKING TOP 5</h2>
@@ -121,7 +121,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <script type="module">
 /* ==== 0. 定数・難易度設定 ==== */
 const SCALE=1.0,THRESHOLD=5000,
-      MSG_WIN='大家くんとの1on1ミーティング回避成功!!',
+      MSG_WIN='大矢君との1on1ミーティング回避成功!!',
       MSG_LOSE='大家くんとの1on1ミーティング開催決定!!';
 const DIFF_CFG={
   EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375}},
@@ -134,7 +134,7 @@ let diff='NORMAL',CFG=DIFF_CFG[diff];
 import{initializeApp}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import{
   getFirestore,collection,addDoc,query,orderBy,limit,getDocs,where,
-  getCountFromServer            /* ← 集計 API */
+  getCountFromServer
 }from"https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 initializeApp({
   apiKey:"AIzaSyAOgz1m_HNI670w567SMRCqWDIM7JJsAhU",
@@ -234,7 +234,8 @@ function spawnOhya(){
   else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
   else if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
   else{x=-m;y=Math.random()*cvs.height;}
-  ohy.push(new Ohya(x,y,ishibe.s*2.3));
+  /* ★ 大家くん速度を半分に（2.3 → 1.15） */
+  ohy.push(new Ohya(x,y,ishibe.s*1.15));
 }
 function levelUp(){lv++;ishibe.lvUp();}
 
@@ -296,15 +297,13 @@ async function gameOver(){
   ui.style.display='none';meterWrap.style.display='none';
   const sc=Math.floor(score);
   finalScore.textContent=`SCORE : ${sc}`;
-  yourRank.textContent='';                             // まず空に
+  yourRank.textContent='';
   overlay.style.display='flex';
   rankBody.innerHTML='<tr><td colspan="4">ランキング読み込み中…</td></tr>';
 
   try{
-    /* 1) 保存 */
     await addDoc(COL,{score:sc,name:userName,ts:Date.now()});
 
-    /* 2) TOP 5 */
     const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(5)));
     rankBody.innerHTML=
       topSnap.docs.map((d,i)=>{
@@ -313,7 +312,6 @@ async function gameOver(){
         <td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")
       || `<tr><td colspan="4">No record</td></tr>`;
 
-    /* 3) 自分より高いスコア件数 +1 = 順位 */
     const cnt=await getCountFromServer(query(COL,where("score",">",sc)));
     yourRank.textContent=`YOUR GLOBAL RANK : ${cnt.data().count+1}`;
   }catch(e){
@@ -348,7 +346,7 @@ document.getElementById('topBtn').onclick=()=>{
   document.getElementById('charScreen').style.display='flex';
 };
 
-/* ==== 12. タイトル表示（画像読込済み） ==== */
+/* ==== 12. タイトル表示 ==== */
 document.getElementById('charScreen').style.display='flex';
 </script>
 
