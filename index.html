@@ -80,7 +80,7 @@ const drawCenter=(img,x,y,r)=>{
 // 3. エンティティ
 //==============================//
 const ISHIBE_SPEED = 4.0;           // px/フレーム相当
-const OHYA_SPEED   = ISHIBE_SPEED*3;// 指定：三倍速
+const OHYA_SPEED   = ISHIBE_SPEED*3;// Ishibe の 3 倍
 
 class Player{
   constructor(){this.r=24;this.x=cvs.width/2;this.y=cvs.height/2;}
@@ -115,7 +115,7 @@ class Ohyakaisei{
 
 class Aura{
   constructor(p){this.p=p;this.r=10;} // 最小 10
-  update(dt){this.r+=0.02*dt;this.x=this.p.x;this.y=this.p.y;} // 途切れず拡大し続ける
+  update(dt){this.r+=0.02*dt;this.x=this.p.x;this.y=this.p.y;} // 連続拡大
   draw(){
     ctx.save();ctx.translate(this.x,this.y);
     const g=ctx.createRadialGradient(0,0,this.r*0.8,0,0,this.r);
@@ -143,7 +143,7 @@ let player,aura,ishibe,ohya,items;
 let state,timer,last,ohyaTimer;
 const ui=document.getElementById('ui'),overlay=document.getElementById('overlay');
 
-const ITEM_INTERVAL = 8000;  // 8 秒毎にランダム出現
+const ITEM_INTERVAL = 3000;   // ★変更点: 3 秒ごとにアイテム生成（頻度アップ）
 let itemTimer=0;
 
 function init(){
@@ -182,10 +182,10 @@ function update(dt){
     items.push(new Item(Math.random()<0.5?'cig':'beer'));
   }
 
-  // アイテム取得でオーラ縮小
+  // アイテム取得でオーラ半減
   items=items.filter(it=>{
     if(dist(it,player)<it.r+player.r){
-      aura.r=Math.max(10,aura.r-30);
+      aura.r=Math.max(10,aura.r*0.5);  // ★変更点: 半分にする
       return false;
     }
     return true;
