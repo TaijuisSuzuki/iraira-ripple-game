@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <title>Iraira Ripple Game</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#111;color:#fff;font-family:sans-serif}
@@ -26,72 +26,86 @@ const IMG_PATHS={
   ohya  :'img/ohyakaisei.png',
   cig   :'img/cigarette.png',
   beer  :'img/beer.png'
-};          // wave.png は不要
+};
 const IMAGES={};
-
 function loadImages(obj){
-  return Promise.all(Object.entries(obj).map(([k,src])=>new Promise(res=>{
-    const i=new Image(); i.onload=()=>{IMAGES[k]=i;res();}; i.src=src;
+  return Promise.all(Object.entries(obj).map(([k,src])=>new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{IMAGES[k]=img;res();}
+    img.onerror=()=>{console.error('Load Err',src);rej(src);}
+    img.src=src;
   })));
 }
 
 //==============================//
-// 2. Canvas & 共通関数
+// 2. Canvas & 共通
 //==============================//
 const cvs=document.getElementById('game');
 const ctx=cvs.getContext('2d');
 function resize(){cvs.width=innerWidth;cvs.height=innerHeight;}
-addEventListener('resize',resize); resize();
+addEventListener('resize',resize);resize();
 
 let mouse={x:cvs.width/2,y:cvs.height/2};
 cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();
-  mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top;};
+  mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
 cvs.ontouchmove=e=>{e.preventDefault();const r=cvs.getBoundingClientRect();
-  mouse.x=e.touches[0].clientX-r.left; mouse.y=e.touches[0].clientY-r.top;},{passive:false};
+  mouse.x=e.touches[0].clientX-r.left;mouse.y=e.touches[0].clientY-r.top;},{passive:false};
 
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-
-// 中心で拡縮描画
 function drawCenter(img,x,y,r){
   const s=(r*2)/img.width;
-  ctx.save();
-  ctx.translate(x,y);
-  ctx.scale(s,s);
-  ctx.drawImage(img,-img.width/2,-img.height/2);
-  ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();
 }
 
 //==============================//
-// 3. クラス定義
+// 3. クラス
 //==============================//
 class Player{
-  constructor(){this.r=24;}
-  update(){this.x=mouse.x;this.y=mouse.y;}
+  constructor(){
+    this.r=24;
+    this.x=cvs.width/2;
+    this.y=cvs.height/2;
+  }
+  update(){
+    this.x=mouse.x;this.y=mouse.y;
+  }
   draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}
 }
 
 class Ishibesawa{
-  constructor(p){this.r=20;this.x=p.x;this.y=p.y;}
-  update(p){const e=.03;this.x+=(p.x-this.x)*e;this.y+=(p.y-this.y)*e;}
+  constructor(){this.r=20;this.x=50;this.y=50;}
+  update(p){
+    const e=.03;
+    this.x+=(p.x-this.x)*e;
+    this.y+=(p.y-this.y)*e;
+  }
   draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
 }
 
 class Ohyakaisei{
   constructor(x,y){this.r=24;this.x=x;this.y=y;this.speed=2;}
-  update(p){const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;
-    this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;}
+  update(p){
+    const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;
+    this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;
+  }
   draw(){drawCenter(IMAGES.ohya,this.x,this.y,this.r);}
 }
 
+// イライラ波（最大120px、ゆっくり拡大）
 class AngerWave{
   constructor(x,y,startR){
-    this.x=x;this.y=y;this.r=startR;this.speed=2;
-    this.maxR=Math.max(cvs.width,cvs.height);
+    this.x=x;this.y=y;
+    this.r=startR;
+    this.speed=0.08;          // px / ms  （0.08 ⇒ 約5倍遅い）
+    this.maxR=120;            // プレイヤー周囲だけ
   }
-  update(){this.r+=this.speed;return this.r<this.maxR;}
+  update(dt){
+    this.r+=this.speed*dt;
+    return this.r<this.maxR;
+  }
   draw(){
-    ctx.save();
-    ctx.translate(this.x,this.y);
+    ctx.save();ctx.translate(this.x,this.y);
     const g=ctx.createRadialGradient(0,0,0,0,0,this.r);
     g.addColorStop(0.0,'rgba(255,80,80,0.6)');
     g.addColorStop(0.5,'rgba(255,0,0,0.35)');
@@ -103,8 +117,11 @@ class AngerWave{
 }
 
 class Item{
-  constructor(tp){this.type=tp;this.r=20;
-    this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;}
+  constructor(tp){
+    this.type=tp;this.r=20;
+    this.x=Math.random()*cvs.width;
+    this.y=Math.random()*cvs.height;
+  }
   update(){}
   draw(){drawCenter(this.type==='cig'?IMAGES.cig:IMAGES.beer,
                     this.x,this.y,this.r);}
@@ -117,8 +134,8 @@ let player,ishibe,ohya,waves,items;
 let timer,state,waveTimer,itemTimer;
 let waveStartR,loopLast;
 
-const WAVE_INTERVAL=800;
-const WAVE_MIN=4,WAVE_INC=2,WAVE_MAX=60;
+const WAVE_INTERVAL=1200;      // 波が出る間隔を長めに
+const WAVE_MIN=4,WAVE_INC=2,WAVE_MAX=60; // startR 管理だけ
 const ITEM_INTERVAL=10000;
 
 //==============================//
@@ -126,7 +143,7 @@ const ITEM_INTERVAL=10000;
 //==============================//
 function init(){
   player=new Player();
-  ishibe=new Ishibesawa(player);
+  ishibe=new Ishibesawa();
   waves=[];items=[];ohya=null;
   timer=0;state='PLAYING';
   waveTimer=itemTimer=0;waveStartR=WAVE_MIN;
@@ -142,7 +159,8 @@ function loop(t){
 }
 
 function update(dt){
-  timer+=dt;player.update();ishibe.update(player);
+  timer+=dt;
+  player.update();ishibe.update(player);
 
   // 波紋生成
   waveTimer+=dt;
@@ -151,7 +169,7 @@ function update(dt){
     waves.push(new AngerWave(player.x,player.y,waveStartR));
     waveStartR=Math.min(waveStartR+WAVE_INC,WAVE_MAX);
   }
-  waves=waves.filter(w=>w.update());
+  waves=waves.filter(w=>w.update(dt));
 
   // アイテム生成
   itemTimer+=dt;
