@@ -52,13 +52,10 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 }
 </style>
 </head>
-
 <body>
 <canvas id="game"></canvas>
-
 <div id="ui" style="display:none">Loading…</div>
 <div id="meterWrap" style="display:none"><div id="meterBar"></div></div>
-
 <!-- ① キャラクター紹介 / 難易度選択 -->
 <div id="charScreen" class="screen">
   <h1>CHARACTER INTRODUCTION</h1>
@@ -70,22 +67,18 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     <div class="char"><img src="img/beer.png"><div class="char-name">ビール</div><div class="char-desc">オーラ半減 +200pt</div></div>
     <div class="char"><img src="img/tenga.png"><div class="char-name">テンガ</div><div class="char-desc">オーラ0% +500pt</div></div>
   </div>
-
   <div id="nameWrap">
     <input id="userName" type="text" placeholder="Your name" maxlength="16">
     <small style="margin-top:6px;font-size:14px;color:#ccc">※16文字以内・未入力なら Anonymous</small>
   </div>
-
   <div id="diffWrap" style="margin:18px 0;font-size:20px">
     DIFFICULTY:
     <label style="margin:0 10px"><input type="radio" name="diff" value="EASY">EASY</label>
     <label style="margin:0 10px"><input type="radio" name="diff" value="NORMAL" checked>NORMAL</label>
     <label style="margin:0 10px"><input type="radio" name="diff" value="HARD">HARD</label>
   </div>
-
   <button id="toRuleBtn" class="btn">NEXT</button>
 </div>
-
 <!-- ② ルール -->
 <div id="ruleScreen" class="screen" style="display:none">
   <h1>HOW TO PLAY</h1>
@@ -99,23 +92,23 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   </p>
   <button id="startBtn" class="btn">START</button>
 </div>
-
 <!-- ③ GAME OVER -->
 <div id="overlay" class="screen" style="display:none">
   <h1>GAME OVER</h1>
   <p id="finalScore"></p>
   <p id="yourRank" style="font-size:22px;margin:6px 0 18px"></p>
   <p id="meetingMsg" class="meeting"></p>
-
   <h2>GLOBAL RANKING TOP 5</h2>
   <table>
     <thead><tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>DATE</th></tr></thead>
     <tbody id="rankBody"></tbody>
   </table>
-
   <button id="retry" class="btn" style="margin-top:24px">Retry</button>
   <button id="topBtn" class="btn" style="margin-top:12px">TOP</button>
 </div>
+
+<!-- ★ BGM 音源 -->
+<audio id="bgm" src="audio/327_BPM110.mp3" preload="auto" loop></audio>
 
 <!-- ────────── JavaScript ────────── -->
 <script type="module">
@@ -129,6 +122,10 @@ const DIFF_CFG={
   HARD  :{max:4,prob:{t:0.15,c:0.425,b:0.425}}
 };
 let diff='NORMAL',CFG=DIFF_CFG[diff];
+
+/* ==== BGM ==== */
+const bgm=document.getElementById('bgm');
+bgm.volume=0.5; // 必要に応じて調整
 
 /* ==== 1. Firebase ==== */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -174,24 +171,121 @@ function meterUpd(){meterBar.style.width=`${Math.min(1,Math.max(0,(aura.r-14*SCA
 function setDiff(){CFG=DIFF_CFG[diff];}
 
 /* ==== 8. ゲーム開始 ==== */
-function init(){setDiff();player=new Player();aura=new Aura(player);ishibe=new Ishibe(4);ohy=[];items=[];state='PLAY';timer=score=0;lv=1;hp=3;itT=0;last=undefined;overlay.style.display='none';ui.style.display='block';meterWrap.style.display='block';uiUpd();meterUpd();requestAnimationFrame(loop);}
-function spawnOhya(){if(ohy.length>=CFG.max)return;const m=40,e=Math.floor(Math.random()*4);let x,y;if(e===0){x=Math.random()*cvs.width;y=-m;}else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}else if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}else{x=-m;y=Math.random()*cvs.height;}/* ★ 速度を石部砂羽の75% に */ohy.push(new Ohya(x,y,ishibe.s*0.75));}
+function init(){
+  setDiff();
+  player=new Player();
+  aura=new Aura(player);
+  ishibe=new Ishibe(4);
+  ohy=[];
+  items=[];
+  state='PLAY';
+  timer=score=0;
+  lv=1;
+  hp=3;
+  itT=0;
+  last=undefined;
+  overlay.style.display='none';
+  ui.style.display='block';
+  meterWrap.style.display='block';
+  uiUpd();
+  meterUpd();
+  /* ★ BGM 再生開始 */
+  bgm.currentTime=0;
+  bgm.play().catch(()=>{});
+  requestAnimationFrame(loop);
+}
+function spawnOhya(){
+  if(ohy.length>=CFG.max)return;
+  const m=40,e=Math.floor(Math.random()*4);
+  let x,y;
+  if(e===0){x=Math.random()*cvs.width;y=-m;}
+  else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
+  else if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
+  else{x=-m;y=Math.random()*cvs.height;}
+  ohy.push(new Ohya(x,y,ishibe.s*0.75)); /* 75% 速度 */
+}
 function levelUp(){lv++;ishibe.lvUp();}
 
 /* ==== 9. メインループ ==== */
-function loop(t){if(state!=='PLAY')return;requestAnimationFrame(loop);const dt=t-(last??t);last=t;timer+=dt;score+=dt*.01;player.upd();aura.upd(dt);ishibe.upd(dt);updPT(dt);if(Math.floor(timer/20000)+1>lv)levelUp();itT+=dt;if(itT>3000){itT=0;const r=Math.random();let tp='beer';if(r<CFG.prob.t)tp='tenga';else if(r<CFG.prob.t+CFG.prob.c)tp='cig';items.push(new Item(tp));}items=items.filter(it=>{if(dist(it,player)<it.r+player.r){if(it.type==='tenga'){aura.r=14*SCALE;score+=500;spark(it.x,it.y,'rgba(255,0,255,{a})');}else{aura.r=Math.max(14*SCALE,aura.r*.5);score+=200;spark(it.x,it.y,'rgba(0,255,255,{a})');}return false;}return true;});if(dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();ohy=ohy.filter(o=>{o.upd(player,dt);if(o.life<=0){spark(o.x,o.y,'rgba(255,255,0,{a})');return false;}if(dist(o,player)<o.r+player.r){hp--;spark(o.x,o.y,'rgba(255,64,64,{a})');return false;}return true;});if(hp<=0){gameOver();return;}ctx.clearRect(0,0,cvs.width,cvs.height);aura.drw();player.drw();ishibe.drw();items.forEach(i=>i.drw());ohy.forEach(o=>o.drw());drwPT();uiUpd();meterUpd();}
+function loop(t){
+  if(state!=='PLAY')return;
+  requestAnimationFrame(loop);
+  const dt=t-(last??t);last=t;
+  timer+=dt;score+=dt*.01;
+  player.upd();aura.upd(dt);ishibe.upd(dt);updPT(dt);
+  if(Math.floor(timer/20000)+1>lv)levelUp();
+  itT+=dt;
+  if(itT>3000){
+    itT=0;
+    const r=Math.random();let tp='beer';
+    if(r<CFG.prob.t)tp='tenga';
+    else if(r<CFG.prob.t+CFG.prob.c)tp='cig';
+    items.push(new Item(tp));
+  }
+  items=items.filter(it=>{
+    if(dist(it,player)<it.r+player.r){
+      if(it.type==='tenga'){aura.r=14*SCALE;score+=500;spark(it.x,it.y,'rgba(255,0,255,{a})');}
+      else{aura.r=Math.max(14*SCALE,aura.r*.5);score+=200;spark(it.x,it.y,'rgba(0,255,255,{a})');}
+      return false;
+    }
+    return true;
+  });
+  if(dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
+  ohy=ohy.filter(o=>{
+    o.upd(player,dt);
+    if(o.life<=0){spark(o.x,o.y,'rgba(255,255,0,{a})');return false;}
+    if(dist(o,player)<o.r+player.r){hp--;spark(o.x,o.y,'rgba(255,64,64,{a})');return false;}
+    return true;
+  });
+  if(hp<=0){gameOver();return;}
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  aura.drw();player.drw();ishibe.drw();items.forEach(i=>i.drw());ohy.forEach(o=>o.drw());drwPT();
+  uiUpd();meterUpd();
+}
 
 /* ==== 10. GAME OVER ==== */
-async function gameOver(){state='END';ui.style.display='none';meterWrap.style.display='none';const sc=Math.floor(score);finalScore.textContent=`SCORE : ${sc}`;yourRank.textContent='';overlay.style.display='flex';rankBody.innerHTML='<tr><td colspan="4">ランキング読み込み中…</td></tr>';try{await addDoc(COL,{score:sc,name:userName,ts:Date.now()});const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(5)));rankBody.innerHTML=topSnap.docs.map((d,i)=>{const v=d.data();return`<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'&lt;')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")||`<tr><td colspan="4">No record</td></tr>`;const cnt=await getCountFromServer(query(COL,where("score",">",sc)));yourRank.textContent=`YOUR GLOBAL RANK : ${cnt.data().count+1}`;}catch(e){console.error(e);rankBody.innerHTML='<tr><td colspan="4">Error</td></tr>';yourRank.textContent='RANK : ―';}meetingMsg.textContent=sc>=THRESHOLD?MSG_WIN:MSG_LOSE;}
+async function gameOver(){
+  state='END';
+  ui.style.display='none';
+  meterWrap.style.display='none';
+  /* ★ BGM 停止 */
+  bgm.pause();
+  const sc=Math.floor(score);
+  finalScore.textContent=`SCORE : ${sc}`;
+  yourRank.textContent='';
+  overlay.style.display='flex';
+  rankBody.innerHTML='<tr><td colspan="4">ランキング読み込み中…</td></tr>';
+  try{
+    await addDoc(COL,{score:sc,name:userName,ts:Date.now()});
+    const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(5)));
+    rankBody.innerHTML=topSnap.docs.map((d,i)=>{const v=d.data();return`<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'&lt;')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")||`<tr><td colspan="4">No record</td></tr>`;
+    const cnt=await getCountFromServer(query(COL,where("score",">",sc)));
+    yourRank.textContent=`YOUR GLOBAL RANK : ${cnt.data().count+1}`;
+  }catch(e){
+    console.error(e);
+    rankBody.innerHTML='<tr><td colspan="4">Error</td></tr>';
+    yourRank.textContent='RANK : ―';
+  }
+  meetingMsg.textContent=sc>=THRESHOLD?MSG_WIN:MSG_LOSE;
+}
 
 /* ==== 11. UI ハンドラ ==== */
 let userName="Anonymous";
 document.getElementById('userName').oninput=e=>userName=e.target.value.trim()||"Anonymous";
 document.querySelectorAll('input[name="diff"]').forEach(r=>r.onchange=e=>diff=e.target.value);
 document.getElementById('toRuleBtn').onclick=()=>{userName=document.getElementById('userName').value.trim()||"Anonymous";document.getElementById('charScreen').style.display='none';document.getElementById('ruleScreen').style.display='flex';};
-document.getElementById('startBtn').onclick=()=>{document.getElementById('ruleScreen').style.display='none';init();};
-document.getElementById('retry').onclick=()=>{overlay.style.display='none';init();};
-document.getElementById('topBtn').onclick=()=>{overlay.style.display='none';document.getElementById('charScreen').style.display='flex';};
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('ruleScreen').style.display='none';
+  init();
+};
+document.getElementById('retry').onclick=()=>{
+  overlay.style.display='none';
+  init();
+};
+document.getElementById('topBtn').onclick=()=>{
+  overlay.style.display='none';
+  document.getElementById('charScreen').style.display='flex';
+};
 
 /* ==== 12. タイトル表示 ==== */
 document.getElementById('charScreen').style.display='flex';
