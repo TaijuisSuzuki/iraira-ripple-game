@@ -5,7 +5,7 @@
 <title>Iraira Ripple Game</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#111;color:#fff;font-family:sans-serif}
-  /* 左上のタイマー */
+  /* 左上タイマー */
   #ui{position:fixed;top:10px;left:10px;z-index:5;font-size:18px}
   /* ---------- GAME OVER オーバーレイ ---------- */
   #overlay{
@@ -33,7 +33,7 @@
 
 <!-- GAME OVER 画面 -->
 <div id="overlay">
-  <h1>大家くんとの1on1ミーティング開催！！</h1>
+  <h1>大家くんとの1on1ミーティング開催決定！！</h1>
   <button id="retry">Retry</button>
 </div>
 
@@ -79,45 +79,33 @@ const drawCenter=(img,x,y,r)=>{
 //==============================//
 // 3. エンティティ
 //==============================//
+const ISHIBE_SPEED = 4.0;           // px/フレーム相当
+const OHYA_SPEED   = ISHIBE_SPEED*3;// 指定：三倍速
+
 class Player{
   constructor(){this.r=24;this.x=cvs.width/2;this.y=cvs.height/2;}
   update(){this.x=mouse.x;this.y=mouse.y;}
   draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}
 }
 
- class Ishibesawa{
-   constructor(){
-     this.r = 20;
-     this.x = Math.random()*cvs.width;
-     this.y = Math.random()*cvs.height;
--    this.speed   = 1.5;       // ★旧値
-+    this.speed   = 4.0;       // ★3 倍弱にアップ
-     this.dirTimer= 0;
--    this.changeDirInterval = 3000;  // 3 秒ごと方向転換
-+    this.changeDirInterval = 1500;  // 1.5 秒ごと方向転換
-     this.changeDir();
-   }
-   changeDir(){
-     const a=Math.random()*Math.PI*2;
-     this.vx=Math.cos(a)*this.speed;
-     this.vy=Math.sin(a)*this.speed;
-   }
-   update(dt){
-     this.dirTimer+=dt;
-     if(this.dirTimer>this.changeDirInterval){
-       this.dirTimer=0; this.changeDir();
-     }
-     this.x+=this.vx; this.y+=this.vy;
-
-     // 端で反射
-     if(this.x<this.r||this.x>cvs.width-this.r) this.vx*=-1;
-     if(this.y<this.r||this.y>cvs.height-this.r) this.vy*=-1;
-   }
-   draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
- }
+class Ishibesawa{
+  constructor(){
+    this.r=20;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
+    this.speed=ISHIBE_SPEED;this.dirTimer=0;this.changeDirInt=1500;this.changeDir();
+  }
+  changeDir(){const a=Math.random()*Math.PI*2;
+    this.vx=Math.cos(a)*this.speed;this.vy=Math.sin(a)*this.speed;}
+  update(dt){
+    this.dirTimer+=dt;if(this.dirTimer>this.changeDirInt){this.dirTimer=0;this.changeDir();}
+    this.x+=this.vx;this.y+=this.vy;
+    if(this.x<this.r||this.x>cvs.width-this.r) this.vx*=-1;
+    if(this.y<this.r||this.y>cvs.height-this.r) this.vy*=-1;
+  }
+  draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
+}
 
 class Ohyakaisei{
-  constructor(x,y){this.r=24;this.x=x;this.y=y;this.speed=2.2;}
+  constructor(x,y){this.r=24;this.x=x;this.y=y;this.speed=OHYA_SPEED;}
   update(p){
     const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;
     this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;
@@ -126,11 +114,8 @@ class Ohyakaisei{
 }
 
 class Aura{
-  constructor(p){this.p=p;this.min=10;this.max=120;this.r=this.min;}
-  update(dt){
-    this.r+=0.02*dt;if(this.r>this.max)this.r=this.min;
-    this.x=this.p.x;this.y=this.p.y;
-  }
+  constructor(p){this.p=p;this.r=10;} // 最小 10
+  update(dt){this.r+=0.02*dt;this.x=this.p.x;this.y=this.p.y;} // 途切れず拡大し続ける
   draw(){
     ctx.save();ctx.translate(this.x,this.y);
     const g=ctx.createRadialGradient(0,0,this.r*0.8,0,0,this.r);
@@ -141,16 +126,34 @@ class Aura{
   }
 }
 
+// タバコ・ビール
+class Item{
+  constructor(tp){
+    this.type=tp;this.r=20;
+    this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
+  }
+  update(){}
+  draw(){drawCenter(this.type==='cig'?IMAGES.cig:IMAGES.beer,this.x,this.y,this.r);}
+}
+
 //==============================//
 // 4. ゲームステート
 //==============================//
-let player,aura,ishibe,ohya,state,timer,last;
+let player,aura,ishibe,ohya,items;
+let state,timer,last,ohyaTimer;
 const ui=document.getElementById('ui'),overlay=document.getElementById('overlay');
 
+const ITEM_INTERVAL = 8000;  // 8 秒毎にランダム出現
+let itemTimer=0;
+
 function init(){
-  player=new Player();aura=new Aura(player);ishibe=new Ishibesawa();
-  ohya=null;state='PLAYING';timer=0;last=undefined;
-  overlay.style.display='none';ui.textContent='Time: 0.0s';
+  player=new Player();
+  aura=new Aura(player);
+  ishibe=new Ishibesawa();
+  ohya=null; ohyaTimer=0;
+  items=[];
+  state='PLAYING'; timer=0; last=undefined; itemTimer=0;
+  overlay.style.display='none'; ui.textContent='Time: 0.0s';
   requestAnimationFrame(loop);
 }
 
@@ -160,7 +163,7 @@ function spawnOhya(){
   if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
   if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
   if(e===3){x=-m;y=Math.random()*cvs.height;}
-  ohya=new Ohyakaisei(x,y);state='CHASE';
+  ohya=new Ohyakaisei(x,y);state='CHASE';ohyaTimer=0;
 }
 
 function loop(t){
@@ -171,14 +174,43 @@ function loop(t){
 
 function update(dt){
   timer+=dt;player.update();aura.update(dt);ishibe.update(dt);
-  if(state==='CHASE')ohya.update(player);
-  if(!ohya&&dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
-  if(ohya&&dist(ohya,player)<ohya.r+player.r)gameOver();
+
+  // アイテム出現
+  itemTimer+=dt;
+  if(itemTimer>ITEM_INTERVAL){
+    itemTimer=0;
+    items.push(new Item(Math.random()<0.5?'cig':'beer'));
+  }
+
+  // アイテム取得でオーラ縮小
+  items=items.filter(it=>{
+    if(dist(it,player)<it.r+player.r){
+      aura.r=Math.max(10,aura.r-30);
+      return false;
+    }
+    return true;
+  });
+
+  if(state==='CHASE'){
+    ohya.update(player); ohyaTimer+=dt;
+    // 5 秒逃げ切りで消滅
+    if(ohyaTimer>=5000){
+      ohya=null; state='PLAYING';
+    }
+  }
+
+  // Ishibe がオーラに触れたら Ohya 出現
+  if(!ohya && dist(ishibe,player)<aura.r+ishibe.r) spawnOhya();
+
+  // Ohya がプレイヤーに触れたらゲームオーバー
+  if(ohya && dist(ohya,player)<ohya.r+player.r) gameOver();
 }
 
 function draw(){
   ctx.clearRect(0,0,cvs.width,cvs.height);
-  aura.draw();player.draw();ishibe.draw();if(ohya)ohya.draw();
+  aura.draw(); player.draw(); ishibe.draw();
+  items.forEach(i=>i.draw());
+  if(ohya) ohya.draw();
   ui.textContent=(state==='GAMEOVER'?'Final ':'Time: ')+(timer/1000).toFixed(1)+'s';
 }
 
