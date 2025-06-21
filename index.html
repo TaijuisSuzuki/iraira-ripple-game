@@ -107,8 +107,9 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   <button id="topBtn" class="btn" style="margin-top:12px">TOP</button>
 </div>
 
-<!-- ★ BGM 音源 -->
-<audio id="bgm" src="audio/327_BPM110.mp3" preload="auto" loop></audio>
+<!-- ★ BGM & ボタン効果音 -->
+<audio id="bgm"   src="audio/327_BPM110.mp3" preload="auto" loop></audio>
+<audio id="btnSE" src="audio/botton.mp3"    preload="auto"></audio>
 
 <!-- ────────── JavaScript ────────── -->
 <script type="module">
@@ -123,9 +124,14 @@ const DIFF_CFG={
 };
 let diff='NORMAL',CFG=DIFF_CFG[diff];
 
-/* ==== BGM ==== */
-const bgm=document.getElementById('bgm');
-bgm.volume=0.5; // 必要に応じて調整
+/* ==== BGM & SE ==== */
+const bgm  = document.getElementById('bgm');   bgm.volume  = 0.5;
+const btnSE= document.getElementById('btnSE'); btnSE.volume= 0.7;
+function playSE(){ btnSE.currentTime=0; btnSE.play().catch(()=>{}); }
+/* すべての button 要素にクリック SE を付与 */
+document.addEventListener('click',e=>{
+  if(e.target.closest('button')) playSE();
+});
 
 /* ==== 1. Firebase ==== */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -189,9 +195,7 @@ function init(){
   meterWrap.style.display='block';
   uiUpd();
   meterUpd();
-  /* ★ BGM 再生開始 */
-  bgm.currentTime=0;
-  bgm.play().catch(()=>{});
+  bgm.currentTime=0; bgm.play().catch(()=>{});
   requestAnimationFrame(loop);
 }
 function spawnOhya(){
@@ -202,7 +206,7 @@ function spawnOhya(){
   else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
   else if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
   else{x=-m;y=Math.random()*cvs.height;}
-  ohy.push(new Ohya(x,y,ishibe.s*0.75)); /* 75% 速度 */
+  ohy.push(new Ohya(x,y,ishibe.s*0.75));
 }
 function levelUp(){lv++;ishibe.lvUp();}
 
@@ -248,7 +252,6 @@ async function gameOver(){
   state='END';
   ui.style.display='none';
   meterWrap.style.display='none';
-  /* ★ BGM 停止 */
   bgm.pause();
   const sc=Math.floor(score);
   finalScore.textContent=`SCORE : ${sc}`;
