@@ -27,7 +27,7 @@
   table{border-collapse:collapse;color:#fff;margin-top:12px}
   td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 
-  /* ===== GAME OVER 追加文 ===== */
+  /* ★ ゲームオーバー追加メッセージ */
   .meeting{font-size:24px;margin:4px 0 24px;color:#ffcc00}
 </style>
 </head>
@@ -39,7 +39,7 @@
 
 <!-- ① キャラクター紹介画面 -->
 <div id="charScreen" class="screen" style="display:none">
-  <h1>CHARACTER&nbsp;INTRODUCTION</h1>
+  <h1>CHARACTER INTRODUCTION</h1>
   <div class="char-list">
     <div class="char">
       <img src="img/player.png" alt="Player">
@@ -48,8 +48,8 @@
     </div>
     <div class="char">
       <img src="img/ishibesawa.png" alt="Ishibesawa">
-      <div class="char-name">石部沢</div>
-      <div class="char-desc">赤オーラに触れると<br>大家くん召喚。</div>
+      <div class="char-name">石部砂羽</div>
+      <div class="char-desc">イライラオーラに触れると<br>大家くん召喚。</div>
     </div>
     <div class="char">
       <img src="img/ohyakaisei.png" alt="Ohya">
@@ -62,7 +62,7 @@
 
 <!-- ② ルール説明画面 -->
 <div id="ruleScreen" class="screen" style="display:none">
-  <h1>HOW&nbsp;TO&nbsp;PLAY</h1>
+  <h1>HOW TO PLAY</h1>
   <p style="max-width:640px;font-size:18px;line-height:1.5;margin:0 20px 36px;text-align:left">
     ● マウスでプレイヤーを操作。<br>
     ● 赤いオーラは時間とともに拡大。石部沢が触れると大家くん(最大3体)が出現。<br>
@@ -76,12 +76,13 @@
 
 <!-- ③ GAME OVER + ランキング画面 -->
 <div id="overlay" class="screen" style="display:none">
-  <h1>GAME&nbsp;OVER</h1>
+  <h1>GAME OVER</h1>
   <p id="finalScore"></p>
-  <!-- ★ 追加メッセージ（改行なし） -->
+
+  <!-- ★ 追加メッセージ（改行せず 1 行表示） -->
   <p class="meeting">大家くんとの1on1ミーティング開催決定!!</p>
 
-  <h2>GLOBAL&nbsp;RANKING&nbsp;TOP&nbsp;10</h2>
+  <h2>GLOBAL RANKING TOP 10</h2>
   <table><tbody id="rankBody"></tbody></table>
 
   <button id="retry" class="btn" style="margin-top:24px">Retry</button>
