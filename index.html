@@ -28,17 +28,17 @@ const IMG_PATHS={
   beer  :'img/beer.png'
 };
 const IMAGES={};
-function loadImages(obj){
-  return Promise.all(Object.entries(obj).map(([k,src])=>new Promise((res,rej)=>{
+function loadImages(map){
+  return Promise.all(Object.entries(map).map(([k,src])=>new Promise((ok,ng)=>{
     const img=new Image();
-    img.onload=()=>{IMAGES[k]=img;res();}
-    img.onerror=()=>{console.error('Load Err',src);rej(src);}
+    img.onload=()=>{IMAGES[k]=img;ok();}
+    img.onerror=()=>{console.error('IMAGE 404:',src);ng(src);}
     img.src=src;
   })));
 }
 
 //==============================//
-// 2. Canvas & 共通
+// 2. Canvas & 共通関数
 //==============================//
 const cvs=document.getElementById('game');
 const ctx=cvs.getContext('2d');
@@ -59,171 +59,148 @@ function drawCenter(img,x,y,r){
 }
 
 //==============================//
-// 3. クラス
+// 3. エンティティ
 //==============================//
 class Player{
-  constructor(){
-    this.r=24;
-    this.x=cvs.width/2;
-    this.y=cvs.height/2;
-  }
-  update(){
-    this.x=mouse.x;this.y=mouse.y;
-  }
+  constructor(){this.r=24;this.x=cvs.width/2;this.y=cvs.height/2;}
+  update(){this.x=mouse.x;this.y=mouse.y;}
   draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}
 }
 
 class Ishibesawa{
-  constructor(){this.r=20;this.x=50;this.y=50;}
-  update(p){
-    const e=.03;
-    this.x+=(p.x-this.x)*e;
-    this.y+=(p.y-this.y)*e;
+  constructor(){
+    this.r=20;
+    this.x=Math.random()*cvs.width;
+    this.y=Math.random()*cvs.height;
+    this.speed=1.5;
+    this.changeDir();
+    this.dirTimer=0;
+  }
+  changeDir(){
+    const ang=Math.random()*Math.PI*2;
+    this.vx=Math.cos(ang)*this.speed;
+    this.vy=Math.sin(ang)*this.speed;
+  }
+  update(dt){
+    this.dirTimer+=dt;
+    if(this.dirTimer>3000){this.dirTimer=0;this.changeDir();}
+    this.x+=this.vx;this.y+=this.vy;
+
+    // 端で反射
+    if(this.x<this.r||this.x>cvs.width-this.r){this.vx*=-1;}
+    if(this.y<this.r||this.y>cvs.height-this.r){this.vy*=-1;}
   }
   draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
 }
 
 class Ohyakaisei{
-  constructor(x,y){this.r=24;this.x=x;this.y=y;this.speed=2;}
-  update(p){
-    const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;
+  constructor(x,y){
+    this.r=24;this.x=x;this.y=y;this.speed=2.2;
+  }
+  update(player){
+    const dx=player.x-this.x,dy=player.y-this.y,l=Math.hypot(dx,dy)||1;
     this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;
   }
   draw(){drawCenter(IMAGES.ohya,this.x,this.y,this.r);}
 }
 
-// イライラ波（最大120px、ゆっくり拡大）
-class AngerWave{
-  constructor(x,y,startR){
-    this.x=x;this.y=y;
-    this.r=startR;
-    this.speed=0.08;          // px / ms  （0.08 ⇒ 約5倍遅い）
-    this.maxR=120;            // プレイヤー周囲だけ
+// プレイヤーに追従するイライラオーラ
+class Aura{
+  constructor(player){
+    this.p=player;
+    this.r=10;this.min=10;this.max=120;
+    this.speed=0.02; // 0.02px/ms ≒ 20px/秒
   }
   update(dt){
     this.r+=this.speed*dt;
-    return this.r<this.maxR;
+    if(this.r>this.max)this.r=this.min;
+    this.x=this.p.x;this.y=this.p.y;
   }
   draw(){
     ctx.save();ctx.translate(this.x,this.y);
-    const g=ctx.createRadialGradient(0,0,0,0,0,this.r);
-    g.addColorStop(0.0,'rgba(255,80,80,0.6)');
-    g.addColorStop(0.5,'rgba(255,0,0,0.35)');
-    g.addColorStop(1.0,'rgba(255,0,0,0)');
+
+    // 内側透明 → 外側赤
+    const g=ctx.createRadialGradient(0,0,this.r*0.8,0,0,this.r);
+    g.addColorStop(0,'rgba(255,0,0,0)');
+    g.addColorStop(1,'rgba(255,0,0,0.5)');
     ctx.fillStyle=g;
     ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
+
+    // 境界ライン
+    ctx.strokeStyle='rgba(255,0,0,0.8)';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();
+
     ctx.restore();
   }
 }
 
-class Item{
-  constructor(tp){
-    this.type=tp;this.r=20;
-    this.x=Math.random()*cvs.width;
-    this.y=Math.random()*cvs.height;
-  }
-  update(){}
-  draw(){drawCenter(this.type==='cig'?IMAGES.cig:IMAGES.beer,
-                    this.x,this.y,this.r);}
-}
+//==============================//
+// 4. ゲームステート
+//==============================//
+let player,aura,ishibe,ohya;
+let state,timer,lastT;
 
-//==============================//
-// 4. ゲーム変数
-//==============================//
-let player,ishibe,ohya,waves,items;
-let timer,state,waveTimer,itemTimer;
-let waveStartR,loopLast;
-
-const WAVE_INTERVAL=1200;      // 波が出る間隔を長めに
-const WAVE_MIN=4,WAVE_INC=2,WAVE_MAX=60; // startR 管理だけ
-const ITEM_INTERVAL=10000;
-
-//==============================//
-// 5. ゲームループ
-//==============================//
 function init(){
   player=new Player();
+  aura=new Aura(player);
   ishibe=new Ishibesawa();
-  waves=[];items=[];ohya=null;
-  timer=0;state='PLAYING';
-  waveTimer=itemTimer=0;waveStartR=WAVE_MIN;
+  ohya=null;
+  state='PLAYING';
+  timer=0;lastT=undefined;
   document.getElementById('retry').style.display='none';
-  loopLast=undefined;
   requestAnimationFrame(loop);
+}
+
+function spawnOhya(){
+  const edge=Math.floor(Math.random()*4);let x,y;
+  const margin=40;
+  if(edge===0){x=Math.random()*cvs.width;y=-margin;}
+  if(edge===1){x=cvs.width+margin;y=Math.random()*cvs.height;}
+  if(edge===2){x=Math.random()*cvs.width;y=cvs.height+margin;}
+  if(edge===3){x=-margin;y=Math.random()*cvs.height;}
+  ohya=new Ohyakaisei(x,y);
+  state='CHASE';
 }
 
 function loop(t){
   if(state!=='GAMEOVER')requestAnimationFrame(loop);
-  const dt=t-(loopLast??t);loopLast=t;
+  const dt=t-(lastT??t);lastT=t;
   update(dt);draw();
 }
 
 function update(dt){
   timer+=dt;
-  player.update();ishibe.update(player);
+  player.update();aura.update(dt);ishibe.update(dt);
+  if(state==='CHASE')ohya.update(player);
 
-  // 波紋生成
-  waveTimer+=dt;
-  if(waveTimer>WAVE_INTERVAL){
-    waveTimer=0;
-    waves.push(new AngerWave(player.x,player.y,waveStartR));
-    waveStartR=Math.min(waveStartR+WAVE_INC,WAVE_MAX);
-  }
-  waves=waves.filter(w=>w.update(dt));
-
-  // アイテム生成
-  itemTimer+=dt;
-  if(itemTimer>ITEM_INTERVAL){
-    itemTimer=0;items.push(new Item(Math.random()<.5?'cig':'beer'));
+  // Ishibesawa がオーラに触れたら Ohya 召喚
+  if(!ohya && dist(ishibe,player)<aura.r+ishibe.r){
+    spawnOhya();
   }
 
-  // アイテム取得
-  items=items.filter(it=>{
-    if(dist(it,player)<it.r+player.r){
-      waveStartR=Math.max(WAVE_MIN,waveStartR-15);
-      return false;
-    }return true;
-  });
-
-  // 波紋→ishibesawa
-  if(state==='PLAYING'&&waves.some(w=>dist(w,ishibe)<w.r)){
-    state='CHASE';spawnOhya();
+  // Ohya がプレイヤーに触れたらゲームオーバー
+  if(ohya && dist(ohya,player)<ohya.r+player.r){
+    state='GAMEOVER';
+    document.getElementById('retry').style.display='inline';
   }
-
-  // ohya 追跡
-  if(state==='CHASE'){
-    ohya.update(player);
-    if(dist(ohya,player)<ohya.r+player.r){state='GAMEOVER';gameOver();}
-  }
-}
-
-function spawnOhya(){
-  const e=Math.floor(Math.random()*4);let x,y;
-  if(e===0){x=Math.random()*cvs.width;y=-40;}
-  if(e===1){x=cvs.width+40;y=Math.random()*cvs.height;}
-  if(e===2){x=Math.random()*cvs.width;y=cvs.height+40;}
-  if(e===3){x=-40;y=Math.random()*cvs.height;}
-  ohya=new Ohyakaisei(x,y);
 }
 
 function draw(){
   ctx.clearRect(0,0,cvs.width,cvs.height);
-  waves.forEach(w=>w.draw());
-  items.forEach(i=>i.draw());
-  player.draw();ishibe.draw();
-  if(state!=='PLAYING'&&ohya)ohya.draw();
-  document.getElementById('status').textContent=
-    (state==='GAMEOVER'?'Final ':'Time: ')+(timer/1000).toFixed(1)+'s';
-}
+  aura.draw();
+  player.draw();
+  ishibe.draw();
+  if(ohya)ohya.draw();
 
-function gameOver(){
-  document.getElementById('retry').style.display='inline';
+  const s=document.getElementById('status');
+  s.textContent=(state==='GAMEOVER'?'Final ':'Time: ')+(timer/1000).toFixed(1)+'s';
 }
 
 document.getElementById('retry').onclick=init;
 
 //==============================//
-// 6. 起動
+// 5. 起動
 //==============================//
 loadImages(IMG_PATHS).then(()=>{
   document.getElementById('status').textContent='Time: 0.0s';
