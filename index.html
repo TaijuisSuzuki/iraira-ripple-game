@@ -98,6 +98,8 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   <p id="finalScore"></p>
   <p id="yourRank" style="font-size:22px;margin:6px 0 18px"></p>
   <p id="meetingMsg" class="meeting"></p>
+  <div id="specialLink" style="margin:16px 0; display:none;"></div>
+  <div id="cloudMsg" style="margin:16px 0; display:none; color:#ffcc00; font-size:20px;"></div>
   <h2>GLOBAL RANKING TOP 5</h2>
   <table>
     <thead><tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>DATE</th></tr></thead>
@@ -173,6 +175,8 @@ class Item{constructor(t){this.type=t;this.r=24*SCALE;this.x=Math.random()*cvs.w
 let player,aura,ishibe,ohy,items,state,timer,last,score,lv,hp,itT;
 const ui=document.getElementById('ui'),meterWrap=document.getElementById('meterWrap'),meterBar=document.getElementById('meterBar');
 const overlay=document.getElementById('overlay'),finalScore=document.getElementById('finalScore'),rankBody=document.getElementById('rankBody'),meetingMsg=document.getElementById('meetingMsg'),yourRank=document.getElementById('yourRank');
+const specialLink = document.getElementById('specialLink');
+const cloudMsg = document.getElementById('cloudMsg');
 function uiUpd(){ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ❤${'❤'.repeat(hp)}  Lv:${lv}`;}
 function meterUpd(){meterBar.style.width=`${Math.min(1,Math.max(0,(aura.r-14*SCALE)/(200*SCALE-14*SCALE)))*100}%`;}
 
@@ -265,7 +269,7 @@ async function gameOver(){
   try{
     await addDoc(COL,{score:sc,name:userName,ts:Date.now()});
     const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(5)));
-    rankBody.innerHTML=topSnap.docs.map((d,i)=>{const v=d.data();return`<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'&lt;')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")||`<tr><td colspan="4">No record</td></tr>`;
+    rankBody.innerHTML=topSnap.docs.map((d,i)=>{const v=d.data();return`<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'<')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")||`<tr><td colspan="4">No record</td></tr>`;
     const cnt=await getCountFromServer(query(COL,where("score",">",sc)));
     yourRank.textContent=`YOUR GLOBAL RANK : ${cnt.data().count+1}`;
   }catch(e){
@@ -274,6 +278,20 @@ async function gameOver(){
     yourRank.textContent='RANK : ―';
   }
   meetingMsg.textContent=sc>=THRESHOLD?MSG_WIN:MSG_LOSE;
+
+  // ★ここから追加
+  specialLink.style.display = 'none';
+  cloudMsg.style.display = 'none';
+  if (sc >= 10000) {
+    if (diff === 'HARD') {
+      specialLink.innerHTML = `<a href="https://drive.google.com/drive/folders/1IWouCard2EK7Zy3q0HicnoFFehnc7ei5?usp=sharing" target="_blank" style="font-size:22px;color:#ffcc00;text-decoration:underline;">🎉 秘密のリンクをゲット！こちらをクリック 🎉</a>`;
+      specialLink.style.display = 'block';
+    } else {
+      cloudMsg.textContent = 'ハードモードで10000点を超えられれば、そこは至極の雲の上...';
+      cloudMsg.style.display = 'block';
+    }
+  }
+  // ★ここまで追加
 }
 
 /* ==== 11. UI ハンドラ ==== */
