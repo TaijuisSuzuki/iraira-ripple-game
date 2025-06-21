@@ -11,9 +11,23 @@
           background:rgba(0,0,0,.85);z-index:20;animation:fade .4s forwards}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .screen h1{font-size:64px;margin:8vh 0 20px;text-align:center}
-  .screen p{max-width:680px;font-size:20px;line-height:1.5;margin:0 20px 32px;text-align:left}
   .btn{font-size:32px;padding:14px 60px;border:none;border-radius:8px;background:#e22;color:#fff;cursor:pointer}
   .btn:hover{background:#ff4444}
+
+  /* キャラクター紹介用 */
+  .char-list{display:flex;flex-wrap:wrap;justify-content:center;gap:40px;max-width:900px;margin-bottom:32px}
+  .char{width:180px;text-align:center}
+  .char img{
+    width:140px;
+    height:140px;
+    object-fit:cover;   /* 画像をトリミングして正円に収める */
+    border-radius:50%;  /* ← 円形マスク */
+    border:3px solid #fff;   /* 任意。枠線不要なら削除 */
+  }
+  .char-name{font-weight:bold;margin-top:8px}
+  .char-desc{font-size:15px;line-height:1.4}
+
+  /* ランキング表 */
   table{border-collapse:collapse;color:#fff;margin-top:12px}
   td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 </style>
@@ -24,40 +38,73 @@
 <!-- 上部 UI -->
 <div id="ui" style="display:none">Loading…</div>
 
-<!-- タイトル画面 -->
-<div id="startScreen" class="screen">
-  <h1>Iraira Ripple Game – Plus</h1>
-  <p>
-    【ルール】マウスでプレイヤーを操作しハイスコアを目指せ！<br>
-    ・オーラが石部沢に触れると大家くん(Ohya)が出現<br>
-    ・Ohya に当たると❤減少（3 回で終了）<br>
-    ・タバコ/ビール取得でオーラ半減 +200 点<br>
-    ・20 秒ごとに LvUP（速度上昇）
+<!-- ① キャラクター紹介画面 -->
+<div id="charScreen" class="screen" style="display:none">
+  <h1>CHARACTER&nbsp;INTRODUCTION</h1>
+  <div class="char-list">
+    <div class="char">
+      <img src="img/player.png" alt="Player">
+      <div class="char-name">You (プレイヤー)</div>
+      <div class="char-desc">マウスで操作。ぶつかったら即アウト。</div>
+    </div>
+    <div class="char">
+      <img src="img/ishibesawa.png" alt="Ishibesawa">
+      <div class="char-name">石部沢</div>
+      <div class="char-desc">赤オーラに触れると大家くんを呼ぶ。</div>
+    </div>
+    <div class="char">
+      <img src="img/ohyakaisei.png" alt="Ohya">
+      <div class="char-name">大家くん</div>
+      <div class="char-desc">接触すると❤が1減。3回でゲームオーバー。</div>
+    </div>
+    <div class="char">
+      <img src="img/cigarette.png" alt="Cigarette">
+      <div class="char-name">タバコ</div>
+      <div class="char-desc">取得でオーラ半減＆+200点</div>
+    </div>
+    <div class="char">
+      <img src="img/beer.png" alt="Beer">
+      <div class="char-name">ビール</div>
+      <div class="char-desc">タバコと同じ効果。</div>
+    </div>
+  </div>
+  <button id="toRuleBtn" class="btn">NEXT</button>
+</div>
+
+<!-- ② ルール説明画面 -->
+<div id="ruleScreen" class="screen" style="display:none">
+  <h1>HOW&nbsp;TO&nbsp;PLAY</h1>
+  <p style="max-width:680px;font-size:20px;line-height:1.5;margin:0 20px 40px;text-align:left">
+    ● マウスでプレイヤーを操作。<br>
+    ● 赤いオーラは時間とともに拡大。石部沢が触れると<br>
+    　大家くん(最大3体)が出現。<br>
+    ● 大家くんに5秒追われると自然消滅。接触すると❤が1減(全3)。<br>
+    ● タバコ / ビール取得でオーラ半減 &amp; +200点。<br>
+    ● 生存1秒ごと+10点。20秒ごとにLvUP。<br>
+    それでは、Good Luck!
   </p>
   <button id="startBtn" class="btn">START</button>
 </div>
 
-<!-- GAME OVER + ランキング画面 -->
+<!-- ③ GAME OVER + ランキング画面 -->
 <div id="overlay" class="screen" style="display:none">
   <h1>GAME&nbsp;OVER</h1>
   <p id="finalScore"></p>
 
   <h2>GLOBAL&nbsp;RANKING&nbsp;TOP&nbsp;10</h2>
-  <table id="rankTable"><tbody id="rankBody"></tbody></table>
+  <table><tbody id="rankBody"></tbody></table>
 
   <button id="retry" class="btn" style="margin-top:28px">Retry</button>
 </div>
 
-<!-- =================== すべて ES Module で記述 =================== -->
 <script type="module">
-/* ---------- 1. Firebase SDK 読み込み ---------- */
+/* ---------- Firebase SDK ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc,
   query, orderBy, limit, getDocs
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-/* Firebase 設定（コンソールからコピペ） */
 const firebaseConfig = {
   apiKey: "AIzaSyAOgz1m_HNI670w567SMRCqWDIM7JJsAhU",
   authDomain: "ishibesawa-ranking.firebaseapp.com",
@@ -67,53 +114,32 @@ const firebaseConfig = {
   appId: "1:1083315491931:web:ca5a01a9ba8d80cec45b7e",
   measurementId: "G-MQDR6D367N"
 };
-
 const appFB = initializeApp(firebaseConfig);
 const db    = getFirestore(appFB);
 const col   = collection(db,"scores");
+const saveScore = async s => { try{await addDoc(col,{score:s,ts:Date.now()});}catch(e){console.error(e);} };
+const loadTop10 = async () => (await getDocs(query(col,orderBy("score","desc"),limit(10)))).docs.map(d=>d.data());
 
-/* スコアを保存 */
-async function saveScore(score){
-  try{ await addDoc(col,{score,ts:Date.now()}); }
-  catch(e){ console.error("saveScore failed",e); }
-}
+/* ---------- 画像 ---------- */
+const IMG_PATHS={player:'img/player.png',ishibe:'img/ishibesawa.png',ohya:'img/ohyakaisei.png',cig:'img/cigarette.png',beer:'img/beer.png'};
+const IMAGES={};const loadImages=()=>Promise.all(Object.entries(IMG_PATHS).map(([k,s])=>new Promise((ok,ng)=>{const i=new Image();i.onload=()=>{IMAGES[k]=i;ok();};i.onerror=ng;i.src=s;})));
 
-/* TOP10 を取得 */
-async function loadTop10(){
-  const snap = await getDocs(query(col,orderBy("score","desc"),limit(10)));
-  return snap.docs.map(d=>d.data());  // [{score,ts},…]
-}
-
-/* ---------- 2. 画像ロード ---------- */
-const IMG_PATHS={
-  player:'img/player.png',
-  ishibe:'img/ishibesawa.png',
-  ohya  :'img/ohyakaisei.png',
-  cig   :'img/cigarette.png',
-  beer  :'img/beer.png'
-};
-const IMAGES={};
-function loadImages(){return Promise.all(Object.entries(IMG_PATHS).map(([k,s])=>new Promise((ok,ng)=>{
-  const i=new Image();i.onload=()=>{IMAGES[k]=i;ok();};i.onerror=ng;i.src=s;
-})));}
-
-/* ---------- 3. Canvas & 汎用関数 ---------- */
+/* ---------- Canvas ---------- */
 const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
-function resize(){cvs.width=innerWidth;cvs.height=innerHeight;}resize();
-addEventListener('resize',resize);
+function resize(){cvs.width=innerWidth;cvs.height=innerHeight;}resize();addEventListener('resize',resize);
 let mouse={x:innerWidth/2,y:innerHeight/2};
 cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
 cvs.ontouchmove=e=>{e.preventDefault();const r=cvs.getBoundingClientRect();mouse.x=e.touches[0].clientX-r.left;mouse.y=e.touches[0].clientY-r.top;},{passive:false};
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const drawCenter=(img,x,y,r)=>{const s=r*2/img.width;ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();};
 
-/* ---------- 4. パーティクル ---------- */
+/* ---------- パーティクル ---------- */
 const particles=[];
 function spawnParticles(x,y,col){for(let i=0;i<18;i++)particles.push({x,y,life:600,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,col});}
 function updateParticles(dt){for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.life-=dt;}while(particles.length&&particles[0].life<=0)particles.shift();}
 function drawParticles(){for(const p of particles){ctx.fillStyle=p.col.replace('{a}',(p.life/600).toFixed(2));ctx.fillRect(p.x,p.y,4,4);}}
 
-/* ---------- 5. クラス定義 ---------- */
+/* ---------- エンティティ ---------- */
 class Player{constructor(){this.r=34;this.x=cvs.width/2;this.y=cvs.height/2;}update(){this.x=mouse.x;this.y=mouse.y;}draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}}
 class Ishibesawa{
   constructor(spd){this.r=28;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;this.speed=spd;this.dirTimer=0;this.cd=1500;this.turn();}
@@ -141,21 +167,19 @@ class Aura{
 }
 class Item{constructor(tp){this.type=tp;this.r=24;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;}draw(){drawCenter(this.type==='cig'?IMAGES.cig:IMAGES.beer,this.x,this.y,this.r);}update(){}}
 
-/* ---------- 6. ゲームステート ---------- */
+/* ---------- ゲームステート ---------- */
 let player,aura,ishibe,ohy,items,state,timer,last,score,lv,lifecnt,itemTimer;
 const ui=document.getElementById('ui'),overlay=document.getElementById('overlay'),
-      finalScore=document.getElementById('finalScore'),startScreen=document.getElementById('startScreen'),
-      rankBody=document.getElementById('rankBody');
-
+      finalScore=document.getElementById('finalScore'),rankBody=document.getElementById('rankBody');
 const ITEM_INTERVAL=3000,MAX_OHYA=3;
+
+function updateUI(){ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ❤${'❤'.repeat(lifecnt)}  Lv:${lv}`;}
 
 function initGame(){
   player=new Player();aura=new Aura(player);ishibe=new Ishibesawa(4);
   ohy=[];items=[];state='PLAYING';timer=score=0;lv=1;lifecnt=3;itemTimer=0;last=undefined;
   overlay.style.display='none';ui.style.display='block';updateUI();requestAnimationFrame(loop);
 }
-
-function updateUI(){ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ❤${'❤'.repeat(lifecnt)}  Lv:${lv}`;}
 
 function spawnOhya(){if(ohy.length>=MAX_OHYA)return;const m=40,e=Math.floor(Math.random()*4);let x,y;
   if(e===0){x=Math.random()*cvs.width;y=-m;}else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
@@ -165,7 +189,6 @@ function spawnOhya(){if(ohy.length>=MAX_OHYA)return;const m=40,e=Math.floor(Math
 function levelUp(){lv++;ishibe.levelUp();aura.levelUp();ohy.forEach(o=>o.levelUp());}
 
 function loop(t){if(state!=='GAMEOVER')requestAnimationFrame(loop);const dt=t-(last??t);last=t;update(dt);draw();}
-
 function update(dt){
   if(state!=='PLAYING')return;
   timer+=dt;score+=dt*0.01;
@@ -188,35 +211,27 @@ function update(dt){
 
   if(lifecnt<=0)gameOver();updateUI();
 }
-
 function draw(){ctx.clearRect(0,0,cvs.width,cvs.height);aura.draw();player.draw();ishibe.draw();items.forEach(i=>i.draw());ohy.forEach(o=>o.draw());drawParticles();}
 
-/* --- ランキング表組み立て --- */
-function setRankingTable(arr){
-  rankBody.innerHTML = arr.map((e,i)=>`<tr><td>${i+1}</td><td>${e.score}</td><td>${new Date(e.ts).toLocaleString()}</td></tr>`).join("")
-                       || `<tr><td colspan=3>No record yet</td></tr>`;
-}
+function setRanking(arr){rankBody.innerHTML=arr.map((e,i)=>
+  `<tr><td>${i+1}</td><td>${e.score}</td><td>${new Date(e.ts).toLocaleString()}</td></tr>`
+).join("")||`<tr><td colspan=3>No record</td></tr>`;}
 
-/* --- GAME OVER 処理 --- */
 function gameOver(){
   state='GAMEOVER';ui.style.display='none';
   const sc=Math.floor(score);
   finalScore.textContent=`SCORE : ${sc}`;
   overlay.style.display='flex';
-
-  // 1) 保存 → 2) 取得 → 3) 表示
-  saveScore(sc)
-    .then(loadTop10)
-    .then(setRankingTable)
-    .catch(e=>{console.error(e);setRankingTable([]);});
+  saveScore(sc).then(loadTop10).then(setRanking).catch(setRanking);
 }
 
-/* --- ボタン --- */
-document.getElementById('retry').onclick=()=>{overlay.style.display='none';initGame();};
-document.getElementById('startBtn').onclick=()=>{startScreen.style.display='none';initGame();};
+/* ---------- 画面遷移ボタン ---------- */
+document.getElementById('toRuleBtn').onclick=()=>{document.getElementById('charScreen').style.display='none';document.getElementById('ruleScreen').style.display='flex';};
+document.getElementById('startBtn').onclick =()=>{document.getElementById('ruleScreen').style.display='none';initGame();};
+document.getElementById('retry').onclick     =()=>{overlay.style.display='none';initGame();};
 
-/* ---------- 7. 起動 ---------- */
-loadImages().then(()=>{startScreen.style.display='flex';});
+/* ---------- 起動 ---------- */
+loadImages().then(()=>{document.getElementById('charScreen').style.display='flex';});
 </script>
 </body>
 </html>
