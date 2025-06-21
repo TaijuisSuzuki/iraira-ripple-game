@@ -7,19 +7,20 @@
   html,body{margin:0;padding:0;overflow:hidden;background:#111;color:#fff;font-family:sans-serif}
   /* 左上のタイマー */
   #ui{position:fixed;top:10px;left:10px;z-index:5;font-size:18px}
-  /* GAME OVER オーバーレイ */
+  /* ---------- GAME OVER オーバーレイ ---------- */
   #overlay{
-    position:fixed;inset:0;
-    display:none;              /* ゲームオーバー時に flex で表示 */
-    align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(0,0,0,.7);z-index:20;color:#fff;
-    animation:fade .3s ease-out forwards;
+    position:fixed;inset:0;display:none;
+    flex-direction:column;justify-content:flex-start;align-items:center;
+    background:rgba(0,0,0,.75);z-index:20;animation:fade .3s forwards;
   }
   @keyframes fade{from{opacity:0}to{opacity:1}}
-  #overlay h1{font-size:72px;margin:0 0 40px;letter-spacing:4px}
+  #overlay h1{
+    font-size:64px;line-height:1.2;text-align:center;
+    margin:10vh 0 40px;letter-spacing:2px;
+  }
   #retry{
-    font-size:32px;padding:12px 48px;border:none;border-radius:8px;
-    background:#e22;color:#fff;cursor:pointer;
+    font-size:32px;padding:14px 60px;border:none;border-radius:8px;
+    background:#e22;cursor:pointer;color:#fff;
   }
   #retry:hover{background:#ff4444}
 </style>
@@ -27,11 +28,12 @@
 <body>
 <canvas id="game"></canvas>
 
+<!-- 左上タイマー -->
 <div id="ui">Loading…</div>
 
 <!-- GAME OVER 画面 -->
 <div id="overlay">
-  <h1>GAME&nbsp;OVER</h1>
+  <h1>大家くんとの1on1ミーティング開催決定！！</h1>
   <button id="retry">Retry</button>
 </div>
 
@@ -49,54 +51,50 @@ const IMG_PATHS={
 const IMAGES={};
 function loadImages(map){
   return Promise.all(Object.entries(map).map(([k,s])=>new Promise((ok,ng)=>{
-    const i=new Image();
-    i.onload=()=>{IMAGES[k]=i;ok();};
-    i.onerror=()=>{console.error('404',s);ng(s);};
-    i.src=s;
+    const i=new Image();i.onload=()=>{IMAGES[k]=i;ok();};
+    i.onerror=()=>{console.error('404',s);ng(s);};i.src=s;
   })));
 }
 
 //==============================//
-// 2. Canvas & 共通
+// 2. Canvas 共通
 //==============================//
 const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
-function resize(){cvs.width=innerWidth;cvs.height=innerHeight;} resize();
+function resize(){cvs.width=innerWidth;cvs.height=innerHeight;}resize();
 addEventListener('resize',resize);
 
 let mouse={x:cvs.width/2,y:cvs.height/2};
 cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();
-  mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top;};
+  mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
 cvs.ontouchmove=e=>{e.preventDefault();const r=cvs.getBoundingClientRect();
-  mouse.x=e.touches[0].clientX-r.left; mouse.y=e.touches[0].clientY-r.top;},{passive:false};
+  mouse.x=e.touches[0].clientX-r.left;mouse.y=e.touches[0].clientY-r.top;},{passive:false};
 
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const drawCenter=(img,x,y,r)=>{
   const s=(r*2)/img.width;
-  ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
-  ctx.drawImage(img,-img.width/2,-img.height/2); ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();
 };
 
 //==============================//
 // 3. エンティティ
 //==============================//
 class Player{
-  constructor(){this.r=24; this.x=cvs.width/2; this.y=cvs.height/2;}
-  update(){this.x=mouse.x; this.y=mouse.y;}
+  constructor(){this.r=24;this.x=cvs.width/2;this.y=cvs.height/2;}
+  update(){this.x=mouse.x;this.y=mouse.y;}
   draw(){drawCenter(IMAGES.player,this.x,this.y,this.r);}
 }
 
 class Ishibesawa{
   constructor(){
-    this.r=20; this.x=Math.random()*cvs.width; this.y=Math.random()*cvs.height;
-    this.speed=1.5; this.dirTimer=0; this.changeDir();
+    this.r=20;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;
+    this.speed=1.5;this.dirTimer=0;this.changeDir();
   }
   changeDir(){const a=Math.random()*Math.PI*2;
-    this.vx=Math.cos(a)*this.speed; this.vy=Math.sin(a)*this.speed;
-  }
+    this.vx=Math.cos(a)*this.speed;this.vy=Math.sin(a)*this.speed;}
   update(dt){
-    this.dirTimer+=dt;
-    if(this.dirTimer>3000){this.dirTimer=0; this.changeDir();}
-    this.x+=this.vx; this.y+=this.vy;
+    this.dirTimer+=dt;if(this.dirTimer>3000){this.dirTimer=0;this.changeDir();}
+    this.x+=this.vx;this.y+=this.vy;
     if(this.x<this.r||this.x>cvs.width-this.r) this.vx*=-1;
     if(this.y<this.r||this.y>cvs.height-this.r) this.vy*=-1;
   }
@@ -104,27 +102,27 @@ class Ishibesawa{
 }
 
 class Ohyakaisei{
-  constructor(x,y){this.r=24; this.x=x; this.y=y; this.speed=2.2;}
+  constructor(x,y){this.r=24;this.x=x;this.y=y;this.speed=2.2;}
   update(p){
     const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;
-    this.x+=dx/l*this.speed; this.y+=dy/l*this.speed;
+    this.x+=dx/l*this.speed;this.y+=dy/l*this.speed;
   }
   draw(){drawCenter(IMAGES.ohya,this.x,this.y,this.r);}
 }
 
 class Aura{
-  constructor(p){this.p=p; this.min=10; this.max=120; this.r=this.min;}
+  constructor(p){this.p=p;this.min=10;this.max=120;this.r=this.min;}
   update(dt){
-    this.r+=0.02*dt; if(this.r>this.max) this.r=this.min;
-    this.x=this.p.x; this.y=this.p.y;
+    this.r+=0.02*dt;if(this.r>this.max)this.r=this.min;
+    this.x=this.p.x;this.y=this.p.y;
   }
   draw(){
-    ctx.save(); ctx.translate(this.x,this.y);
+    ctx.save();ctx.translate(this.x,this.y);
     const g=ctx.createRadialGradient(0,0,this.r*0.8,0,0,this.r);
-    g.addColorStop(0,'rgba(255,0,0,0)'); g.addColorStop(1,'rgba(255,0,0,.5)');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='rgba(255,0,0,.9)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2); ctx.stroke(); ctx.restore();
+    g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,'rgba(255,0,0,.5)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,0,0,.9)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();ctx.restore();
   }
 }
 
@@ -135,38 +133,37 @@ let player,aura,ishibe,ohya,state,timer,last;
 const ui=document.getElementById('ui'),overlay=document.getElementById('overlay');
 
 function init(){
-  player=new Player(); aura=new Aura(player); ishibe=new Ishibesawa();
-  ohya=null; state='PLAYING'; timer=0; last=undefined;
-  overlay.style.display='none'; ui.textContent='Time: 0.0s';
+  player=new Player();aura=new Aura(player);ishibe=new Ishibesawa();
+  ohya=null;state='PLAYING';timer=0;last=undefined;
+  overlay.style.display='none';ui.textContent='Time: 0.0s';
   requestAnimationFrame(loop);
 }
 
 function spawnOhya(){
-  const m=40,e=Math.floor(Math.random()*4); let x,y;
-  if(e===0){x=Math.random()*cvs.width; y=-m;}
-  if(e===1){x=cvs.width+m; y=Math.random()*cvs.height;}
-  if(e===2){x=Math.random()*cvs.width; y=cvs.height+m;}
-  if(e===3){x=-m; y=Math.random()*cvs.height;}
-  ohya=new Ohyakaisei(x,y); state='CHASE';
+  const m=40,e=Math.floor(Math.random()*4);let x,y;
+  if(e===0){x=Math.random()*cvs.width;y=-m;}
+  if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
+  if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
+  if(e===3){x=-m;y=Math.random()*cvs.height;}
+  ohya=new Ohyakaisei(x,y);state='CHASE';
 }
 
 function loop(t){
-  if(state!=='GAMEOVER') requestAnimationFrame(loop);
-  const dt=t-(last??t); last=t;
-  update(dt); draw();
+  if(state!=='GAMEOVER')requestAnimationFrame(loop);
+  const dt=t-(last??t);last=t;
+  update(dt);draw();
 }
 
 function update(dt){
-  timer+=dt; player.update(); aura.update(dt); ishibe.update(dt);
-  if(state==='CHASE') ohya.update(player);
-
-  if(!ohya && dist(ishibe,player)<aura.r+ishibe.r) spawnOhya();
-  if(ohya && dist(ohya,player)<ohya.r+player.r) gameOver();
+  timer+=dt;player.update();aura.update(dt);ishibe.update(dt);
+  if(state==='CHASE')ohya.update(player);
+  if(!ohya&&dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
+  if(ohya&&dist(ohya,player)<ohya.r+player.r)gameOver();
 }
 
 function draw(){
   ctx.clearRect(0,0,cvs.width,cvs.height);
-  aura.draw(); player.draw(); ishibe.draw(); if(ohya) ohya.draw();
+  aura.draw();player.draw();ishibe.draw();if(ohya)ohya.draw();
   ui.textContent=(state==='GAMEOVER'?'Final ':'Time: ')+(timer/1000).toFixed(1)+'s';
 }
 
