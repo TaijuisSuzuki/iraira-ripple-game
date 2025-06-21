@@ -107,9 +107,10 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   <button id="topBtn" class="btn" style="margin-top:12px">TOP</button>
 </div>
 
-<!-- ★ BGM & ボタン効果音 -->
-<audio id="bgm"   src="audio/327_BPM110.mp3" preload="auto" loop></audio>
-<audio id="btnSE" src="audio/botton.mp3"    preload="auto"></audio>
+<!-- ★ BGM & ボタンSE & アイテムSE -->
+<audio id="bgm"    src="audio/327_BPM110.mp3"         preload="auto" loop></audio>
+<audio id="btnSE"  src="audio/botton.mp3"              preload="auto"></audio>
+<audio id="itemSE" src="audio/coin-pickup-98269.mp3"   preload="auto"></audio>
 
 <!-- ────────── JavaScript ────────── -->
 <script type="module">
@@ -125,12 +126,14 @@ const DIFF_CFG={
 let diff='NORMAL',CFG=DIFF_CFG[diff];
 
 /* ==== BGM & SE ==== */
-const bgm  = document.getElementById('bgm');   bgm.volume  = 0.5;
-const btnSE= document.getElementById('btnSE'); btnSE.volume= 0.7;
-function playSE(){ btnSE.currentTime=0; btnSE.play().catch(()=>{}); }
-/* すべての button 要素にクリック SE を付与 */
+const bgm   = document.getElementById('bgm');   bgm.volume   = 0.5;
+const btnSE = document.getElementById('btnSE'); btnSE.volume = 0.7;
+const itemSE= document.getElementById('itemSE');itemSE.volume= 0.8;
+function playBtnSE(){ btnSE.currentTime=0; btnSE.play().catch(()=>{}); }
+function playItemSE(){itemSE.currentTime=0; itemSE.play().catch(()=>{}); }
+/* 全ボタンにクリック効果音 */
 document.addEventListener('click',e=>{
-  if(e.target.closest('button')) playSE();
+  if(e.target.closest('button')) playBtnSE();
 });
 
 /* ==== 1. Firebase ==== */
@@ -227,7 +230,8 @@ function loop(t){
     items.push(new Item(tp));
   }
   items=items.filter(it=>{
-    if(dist(it,player)<it.r+player.r){
+    if(dist(it,player)<it.r+player.r){          /* ★ アイテムに触れた */
+      playItemSE();                             /* ← 効果音 */
       if(it.type==='tenga'){aura.r=14*SCALE;score+=500;spark(it.x,it.y,'rgba(255,0,255,{a})');}
       else{aura.r=Math.max(14*SCALE,aura.r*.5);score+=200;spark(it.x,it.y,'rgba(0,255,255,{a})');}
       return false;
