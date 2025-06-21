@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Iraira Ripple Game (Image)</title>
+<style>
+  body,html{margin:0;padding:0;overflow:hidden;background:#111;color:#fff;font-family:sans-serif}
+  #ui{position:fixed;top:10px;left:10px;z-index:10}
+  h1{font-size:18px;margin:0 0 4px 0}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="ui">
+  <h1 id="status">Loading...</h1>
+  <button id="retry" style="display:none">Retry</button>
+</div>
+
+<script>
+// =====================================================
+// 1) 画像プリロード
+// =====================================================
+const IMG_PATHS = {
+  player     : 'img/player.png',
+  ishibe     : 'img/ishibesawa.png',
+  ohya       : 'img/ohyakaisei.png',
+  cig        : 'img/cigarette.png',
+  beer       : 'img/beer.png',
+  wave       : 'img/wave.png'
+};
+const IMAGES = {};   // 読み込んだ Image オブジェクトを格納
+
+function loadImages(paths){
+  const entries = Object.entries(paths);
+  return Promise.all(entries.map(([key,src])=>{
+    return new Promise(resolve=>{
+      const img = new Image();
+      img.onload = ()=>{IMAGES[key]=img; resolve();}
+      img.src = src;
+    });
+  }));
+}
+
+// =====================================================
+// 2) Canvas & 共通ユーティリティ
+// =====================================================
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+function resize(){canvas.width = innerWidth; canvas.height = innerHeight;}
+addEventListener('resize', resize); resize();
+
+let mouse = {x:canvas.width/2, y:canvas.height/2};
+canvas.onmousemove = e=>{
+  const r = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+};
+canvas.ontouchmove = e=>{
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  mouse.x = e.touches[0].clientX - r.left; mouse.y = e.touches[0].clientY - r.top;
+},{passive:false};
+
+function distance(a,b){return Math.hypot(a.x-b.x, a.y-b.y);}
+
+// =====================================================
+// 3) ゲームオブジェクト（画像付き）
+// =====================================================
+class Player{
+  constructor(){this.r=24;}
+  update(){this.x=mouse.x; this.y=mouse.y;}
+  draw(){drawCentered(IMAGES.player,this.x,this.y,this.r);}
+}
+
+class Ishibesawa{
+  constructor(player){this.r=20; this.x=player.x; this.y=player.y;}
+  update(p){const e=0.03; this.x+= (p.x-this.x)*e; this.y+=(p.y-this.y)*e;}
+  draw(){drawCentered(IMAGES.ishibe,this.x,this.y,this.r);}
+}
+
+class Ohyakaisei{
+  constructor(x,y){this.r=24; this.x=x; this.y=y; this.speed=2;}
+  update(p){const dx=p.x-this.x, dy=p.y-this.y, len=Math.hypot(dx,dy)||1;
+            this.x+=dx/len*this.speed; this.y+=dy/len*this.speed;}
+  draw(){drawCentered(IMAGES.ohya,this.x,this.y,this.r);}
+}
+
+class AngerWave{
+  constructor(x,y,startR){
+    this.x=x; this.y=y; this.r=startR; this.speed=2;
+    this.maxR=Math.max(canvas.width,canvas.height);
+  }
+  update(){this.r+=this.speed; return this.r<this.maxR;}
+  draw(){
+    ctx.save();
+    ctx.translate(this.x,this.y);
+    const scale = this.r / (IMAGES.wave.width/2);
+    ctx.scale(scale,scale);
+    ctx.drawImage(IMAGES.wave,-IMAGES.wave.width/2,-IMAGES.wave.height/2);
+    ctx.restore();
+  }
+}
+
+class Item{
+  constructor(type){
+    this.type=type; this.r=20;
+    this.x=Math.random()*canvas.width; this.y=Math.random()*canvas.height;
+  }
+  update(){}
+  draw(){
+    const img = this.type==='cig'?IMAGES.cig:IMAGES.beer;
+    drawCentered(img,this.x,this.y,this.r);
+  }
+}
+
+// 画像を中心基準で描画しつつ半径に合わせて拡縮
+function drawCentered(img,x,y,r){
+  const scale = (r*2)/img.width;
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(scale,scale);
+  ctx.drawImage(img,-img.width/2,-img.height/2);
+  ctx.restore();
+}
+
+// =====================================================
+// 4) ゲームループ（前回と同等、画像に合わせ一部サイズ変更）
+// =====================================================
+let player,ishibe,waves,ohya,items;
+let timer,state,waveTimer,itemTimer;
+let waveStartR,loopLast;
+
+const waveInterval=800;
+const waveStartR_MIN=4, waveStartR_INC=2, waveStartR_MAX=60;
+const itemInterval=10000;
+
+function init(){
+  player=new Player();
+  ishibe=new Ishibesawa(player);
+  waves=[]; items=[]; ohya=null;
+  timer=0; state='PLAYING';
+  waveTimer=itemTimer=0; waveStartR=waveStartR_MIN;
+  document.getElementById('retry').style.display='none';
+  loopLast=undefined;
+  requestAnimationFrame(loop);
+}
+
+function loop(t){
+  if(state!=='GAMEOVER') requestAnimationFrame(loop);
+  const dt = (t-(loopLast??t)); loopLast=t;
+  update(dt); draw();
+}
+
+function update(dt){
+  timer+=dt; player.update(); ishibe.update(player);
+
+  // 波紋生成
+  waveTimer+=dt;
+  if(waveTimer>waveInterval){
+    waveTimer=0;
+    waves.push(new AngerWave(player.x,player.y,waveStartR));
+    waveStartR=Math.min(waveStartR+waveStartR_INC,waveStartR_MAX);
+  }
+  waves = waves.filter(w=>w.update());
+
+  // アイテム生成
+  itemTimer+=dt;
+  if(itemTimer>itemInterval){
+    itemTimer=0; items.push(new Item(Math.random()<.5?'cig':'beer'));
+  }
+
+  // アイテム取得
+  items = items.filter(it=>{
+    if(distance(it,player)<it.r+player.r){
+      waveStartR=Math.max(waveStartR_MIN,waveStartR-15);
+      return false;
+    }
+    return true;
+  });
+
+  // 波紋→ishibesawa
+  if(state==='PLAYING'){
+    if(waves.some(w=>distance(w,ishibe)<w.r)){
+      state='CHASE'; spawnOhya();
+    }
+  }
+
+  // ohya 追跡
+  if(state==='CHASE'){
+    ohya.update(player);
+    if(distance(ohya,player)<ohya.r+player.r){state='GAMEOVER'; gameOver();}
+  }
+}
+
+function spawnOhya(){
+  const e=Math.floor(Math.random()*4); let x,y;
+  if(e===0){x=Math.random()*canvas.width;y=-40;}
+  if(e===1){x=canvas.width+40;y=Math.random()*canvas.height;}
+  if(e===2){x=Math.random()*canvas.width;y=canvas.height+40;}
+  if(e===3){x=-40;y=Math.random()*canvas.height;}
+  ohya=new Ohyakaisei(x,y);
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  waves.forEach(w=>w.draw());
+  items.forEach(i=>i.draw());
+  player.draw(); ishibe.draw();
+  if(state!=='PLAYING' && ohya) ohya.draw();
+  document.getElementById('status').textContent=
+    (state==='GAMEOVER'?'Final ':'Time: ')+(timer/1000).toFixed(1)+'s';
+}
+
+function gameOver(){
+  document.getElementById('retry').style.display='inline';
+}
+
+document.getElementById('retry').onclick=init;
+
+// =====================================================
+// 5) 画像ロード後にゲーム開始
+// =====================================================
+loadImages(IMG_PATHS).then(()=>{
+  document.getElementById('status').textContent='Time: 0.0s';
+  init();
+});
+</script>
+</body>
+</html>
