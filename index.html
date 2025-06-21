@@ -7,28 +7,17 @@
 
 <style>
 /* ==== 全体リセット & 縁取り完全無効化 ==== */
-html,body,canvas,#game,.screen{
-  margin:0;padding:0;
-  border:none !important;
-  outline:none !important;
-  box-shadow:none !important;
-  background:#111;
-  color:#fff;
-  font-family:sans-serif;
-}
+html,body,canvas,#game,.screen{margin:0;padding:0;border:none !important;outline:none !important;box-shadow:none !important;background:#111;color:#fff;font-family:sans-serif}
 
 /* ===== 上部インジケータ ===== */
-#ui{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5;font-size:22px;text-align:center;pointer-events:none}
+#ui{position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:5;font-size:20px;text-align:center;pointer-events:none}
+
+/* ===== イライラメーター ===== */
+#meterWrap{position:fixed;top:36px;left:50%;transform:translateX(-50%);width:80%;max-width:560px;height:12px;background:#555;border-radius:6px;z-index:5}
+#meterBar{height:100%;width:0;background:#ff3333;border-radius:6px;transition:width .1s linear}
 
 /* ===== 画面共通 ===== */
-.screen{
-  position:fixed;inset:0;
-  display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
-  background:rgba(0,0,0,.85);z-index:20;animation:fade .4s forwards;
-
-  overflow-y:auto;           /* ★ スマホで縦にスクロール出来るように */
-  -webkit-overflow-scrolling:touch; /* iOS 慣性スクロール */
-}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;background:rgba(0,0,0,.85);z-index:20;animation:fade .4s forwards;overflow-y:auto;-webkit-overflow-scrolling:touch}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .screen h1{font-size:64px;margin:8vh 0 20px;text-align:center}
 
@@ -59,6 +48,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   .screen h1{font-size:48px;}
   table{font-size:14px;}
   .btn{font-size:24px;padding:10px 36px;}
+  #ui{font-size:18px;}
 }
 </style>
 </head>
@@ -66,8 +56,9 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <body>
 <canvas id="game"></canvas>
 
-<!-- ===== 上部 UI ===== -->
+<!-- 上部 UI とイライラメーター -->
 <div id="ui" style="display:none">Loading…</div>
+<div id="meterWrap" style="display:none"><div id="meterBar"></div></div>
 
 <!-- ① キャラクター紹介 + ユーザー名入力 -->
 <div id="charScreen" class="screen" style="display:none">
@@ -93,7 +84,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     ● マウスでプレイヤーを操作。<br>
     ● イライラオーラは時間とともに拡大。石部砂羽が触れると大家くん(最大3体)が出現。<br>
     ● 大家くんに接触すると❤が1減り、3回でゲームオーバー。<br>
-    ● タバコ / ビールを取るとオーラ半減 &amp; +200点。<br>
+    ● タバコ / ビールを取るとオーラを20％減少 &amp; +200点。<br>
     ● 生存1秒ごと+10点。20秒ごとにLvUP。<br>
     Enjoy!
   </p>
@@ -120,7 +111,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
    0. 画面サイズ判定 & SCALE
    ===================================================================*/
 const IS_MOBILE = window.matchMedia('(max-width: 640px)').matches;
-const SCALE = IS_MOBILE ? 1.1 : 1.0;  // モバイル拡大率 1.3
+const SCALE = IS_MOBILE ? 1.1 : 1.0;
 
 /* ===================================================================
    1. Firebase 初期化
@@ -143,12 +134,18 @@ const db    = getFirestore(appFB);
 const col   = collection(db,"scores");
 
 /* ===================================================================
-   2. ユーザー名
+   2. 定数（イライラメーター用）
+   ===================================================================*/
+const MIN_AURA = 14 * SCALE;
+const MAX_AURA = 200 * SCALE;   // ここを超えるとメーター 100%
+
+/* ===================================================================
+   3. ユーザー名
    ===================================================================*/
 let userName = "Anonymous";
 
 /* ===================================================================
-   3. Firestore 関数
+   4. Firestore 関数
    ===================================================================*/
 const saveScore = async (score,name) =>{
   try{ await addDoc(col,{score,name,ts:Date.now()}); }catch(e){console.error(e);}
@@ -158,7 +155,7 @@ const loadTop5 = async () =>
     .docs.map(d=>d.data());
 
 /* ===================================================================
-   4. 画像ロード
+   5. 画像ロード
    ===================================================================*/
 const IMG_PATHS = {
   player :'img/player.png',
@@ -175,7 +172,7 @@ const loadImages = () => Promise.all(
 );
 
 /* ===================================================================
-   5. Canvas & Util
+   6. Canvas & Util
    ===================================================================*/
 const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
 function resize(){cvs.width=innerWidth;cvs.height=innerHeight;} resize();
@@ -189,7 +186,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const drawCenter=(img,x,y,r)=>{const s=r*2/img.width;ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();};
 
 /* ===================================================================
-   6. パーティクル
+   7. パーティクル
    ===================================================================*/
 const particles=[];
 function spawnParticles(x,y,col){
@@ -207,7 +204,7 @@ function drawParticles(){
 }
 
 /* ===================================================================
-   7. エンティティ
+   8. エンティティ
    ===================================================================*/
 class Player{
   constructor(){this.r=34*SCALE;this.x=cvs.width/2;this.y=cvs.height/2;}
@@ -226,11 +223,11 @@ class Ishibesawa{
     if(this.dirTimer>this.cd){this.dirTimer=0;this.turn();}
     this.x+=this.vx;this.y+=this.vy;
 
-    /* ---- 境界処理改良：スタック防止 ---- */
-    if(this.x < this.r){ this.x = this.r; this.vx =  Math.abs(this.vx);}
-    if(this.x > cvs.width  - this.r){ this.x = cvs.width  - this.r; this.vx = -Math.abs(this.vx);}
-    if(this.y < this.r){ this.y = this.r; this.vy =  Math.abs(this.vy);}
-    if(this.y > cvs.height - this.r){ this.y = cvs.height - this.r; this.vy = -Math.abs(this.vy);}
+    /* 境界反転 */
+    if(this.x < this.r){ this.x=this.r; this.vx=Math.abs(this.vx);}
+    if(this.x > cvs.width-this.r){ this.x=cvs.width-this.r; this.vx=-Math.abs(this.vx);}
+    if(this.y < this.r){ this.y=this.r; this.vy=Math.abs(this.vy);}
+    if(this.y > cvs.height-this.r){ this.y=cvs.height-this.r; this.vy=-Math.abs(this.vy);}
   }
   draw(){drawCenter(IMAGES.ishibe,this.x,this.y,this.r);}
 }
@@ -244,7 +241,7 @@ class Ohyakaisei{
   draw(){drawCenter(IMAGES.ohya,this.x,this.y,this.r);}
 }
 class Aura{
-  constructor(p){this.p=p;this.r=14*SCALE;this.speed=0.02*SCALE;}
+  constructor(p){this.p=p;this.r=MIN_AURA;this.speed=0.02*SCALE;}
   levelUp(){this.speed+=0.003*SCALE;}
   update(dt){this.r+=this.speed*dt;this.x=this.p.x;this.y=this.p.y;}
   draw(){
@@ -263,16 +260,21 @@ class Item{
 }
 
 /* ===================================================================
-   8. ゲームステート
+   9. ゲームステート
    ===================================================================*/
 let player,aura,ishibe,ohy,items,state,timer,last,score,lv,lifecnt,itemTimer;
 const ui=document.getElementById('ui'),overlay=document.getElementById('overlay'),
-      finalScore=document.getElementById('finalScore'),rankBody=document.getElementById('rankBody');
+      finalScore=document.getElementById('finalScore'),rankBody=document.getElementById('rankBody'),
+      meterWrap=document.getElementById('meterWrap'),meterBar=document.getElementById('meterBar');
 
 const ITEM_INTERVAL=3000,MAX_OHYA=3;
 
 function updateUI(){
   ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ❤${'❤'.repeat(lifecnt)}  Lv:${lv}`;
+}
+function updateMeter(){
+  const perc=Math.min(1,Math.max(0,(aura.r-MIN_AURA)/(MAX_AURA-MIN_AURA)));
+  meterBar.style.width=`${perc*100}%`;
 }
 
 function initGame(){
@@ -284,7 +286,8 @@ function initGame(){
   timer=score=0;lv=1;lifecnt=3;itemTimer=0;last=undefined;
   overlay.style.display='none';
   ui.style.display='block';
-  updateUI();
+  meterWrap.style.display='block';
+  updateUI();updateMeter();
   requestAnimationFrame(loop);
 }
 
@@ -299,9 +302,7 @@ function spawnOhya(){
   ohy.push(new Ohyakaisei(x,y,ishibe.speed*3));
 }
 
-function levelUp(){
-  lv++;ishibe.levelUp();aura.levelUp();ohy.forEach(o=>o.levelUp());
-}
+function levelUp(){lv++;ishibe.levelUp();aura.levelUp();ohy.forEach(o=>o.levelUp());}
 
 function loop(t){
   if(state!=='GAMEOVER')requestAnimationFrame(loop);
@@ -315,17 +316,14 @@ function update(dt){
 
   player.update();aura.update(dt);ishibe.update(dt);updateParticles(dt);
 
-  /* LvUP */
   if(Math.floor(timer/20000)+1>lv)levelUp();
 
-  /* アイテム生成 */
   itemTimer+=dt;
   if(itemTimer>ITEM_INTERVAL){itemTimer=0;items.push(new Item(Math.random()<.5?'cig':'beer'));}
 
-  /* アイテム取得 */
   items=items.filter(it=>{
     if(dist(it,player)<it.r+player.r){
-      aura.r=Math.max(14*SCALE,aura.r*0.5);
+      aura.r=Math.max(MIN_AURA,aura.r*0.8);          // ★ 20％減少（×0.8）
       score+=200;
       spawnParticles(it.x,it.y,'rgba(0,255,255,{a})');
       return false;
@@ -333,10 +331,8 @@ function update(dt){
     return true;
   });
 
-  /* オーラ接触で大家くん召喚 */
   if(dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
 
-  /* 大家くん処理 */
   ohy=ohy.filter(o=>{
     o.update(player,dt);
     if(o.life<=0){spawnParticles(o.x,o.y,'rgba(255,255,0,{a})');return false;}
@@ -350,31 +346,27 @@ function update(dt){
 
   if(lifecnt<=0)gameOver();
 
-  updateUI();
+  updateUI();updateMeter();
 }
 
 function draw(){
   ctx.clearRect(0,0,cvs.width,cvs.height);
-  aura.draw();
-  player.draw();
-  ishibe.draw();
-  items.forEach(i=>i.draw());
-  ohy.forEach(o=>o.draw());
-  drawParticles();
+  aura.draw();player.draw();ishibe.draw();
+  items.forEach(i=>i.draw());ohy.forEach(o=>o.draw());drawParticles();
 }
 
 /* ===================================================================
-   9. ランキング & ゲームオーバー
+   10. ランキング & ゲームオーバー
    ===================================================================*/
 function setRanking(arr){
   rankBody.innerHTML=arr.map((e,i)=>`
     <tr><td>${i+1}</td><td>${(e.name||'---').replace(/</g,'&lt;')}</td><td>${e.score}</td><td>${new Date(e.ts).toLocaleString()}</td></tr>
   `).join("")||`<tr><td colspan="4">No record</td></tr>`;
 }
-
 function gameOver(){
   state='GAMEOVER';
   ui.style.display='none';
+  meterWrap.style.display='none';
   const sc=Math.floor(score);
   finalScore.textContent=`SCORE : ${sc}`;
   overlay.style.display='flex';
@@ -382,18 +374,16 @@ function gameOver(){
 }
 
 /* ===================================================================
-   10. 画面遷移 & 入力欄
+   11. 画面遷移 & 入力欄
    ===================================================================*/
 document.getElementById('userName').addEventListener('input',e=>{
   userName=e.target.value.trim()||"Anonymous";
 });
-
 document.getElementById('toRuleBtn').onclick=()=>{
   userName=document.getElementById('userName').value.trim()||"Anonymous";
   document.getElementById('charScreen').style.display='none';
   document.getElementById('ruleScreen').style.display='flex';
 };
-
 document.getElementById('startBtn').onclick=()=>{
   document.getElementById('ruleScreen').style.display='none';
   initGame();
@@ -404,7 +394,7 @@ document.getElementById('retry').onclick=()=>{
 };
 
 /* ===================================================================
-   11. 起動
+   12. 起動
    ===================================================================*/
 loadImages().then(()=>{document.getElementById('charScreen').style.display='flex';});
 </script>
