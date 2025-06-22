@@ -250,6 +250,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <audio id="bgm"    src="audio/327_BPM110.mp3"         preload="auto" loop></audio>
 <audio id="btnSE"  src="audio/botton.mp3"              preload="auto"></audio>
 <audio id="itemSE" src="audio/coin-pickup-98269.mp3"   preload="auto"></audio>
+<audio id="kyouchousei" src="audio/kyouchousei.mp3" preload="auto" loop></audio>
 <script type="module">
 let SCALE = 1.0;
 const THRESHOLD=5000,
@@ -264,8 +265,24 @@ let diff='NORMAL',CFG=DIFF_CFG[diff];
 const bgm   = document.getElementById('bgm');   bgm.volume   = 0.5;
 const btnSE = document.getElementById('btnSE'); btnSE.volume = 0.7;
 const itemSE= document.getElementById('itemSE');itemSE.volume= 0.8;
+const kyouchousei = document.getElementById('kyouchousei'); kyouchousei.volume = 0.8;
+let isKyouchouseiPlaying = false;
 function playBtnSE(){ btnSE.currentTime=0; btnSE.play().catch(()=>{}); }
 function playItemSE(){itemSE.currentTime=0; itemSE.play().catch(()=>{}); }
+function playKyouchousei(){
+  if(!isKyouchouseiPlaying){
+    kyouchousei.currentTime=0;
+    kyouchousei.play().catch(()=>{});
+    isKyouchouseiPlaying = true;
+  }
+}
+function stopKyouchousei(){
+  if(isKyouchouseiPlaying){
+    kyouchousei.pause();
+    kyouchousei.currentTime=0;
+    isKyouchouseiPlaying = false;
+  }
+}
 document.addEventListener('click',e=>{
   if(e.target.closest('button')) playBtnSE();
 });
@@ -319,7 +336,7 @@ function init(){
   player=new Player();
   aura=new Aura(player);
   let isMobile = window.innerWidth <= 640;
-  let ishibeCount = isMobile ? 1 : 2;
+  let ishibeCount = isMobile ? 1 : 3; // PCは3体、スマホは1体
   ishibes = [];
   for(let i=0;i<ishibeCount;i++) ishibes.push(new Ishibe(4));
   ohy=[];
@@ -336,6 +353,7 @@ function init(){
   uiUpd();
   meterUpd();
   bgm.currentTime=0; bgm.play().catch(()=>{});
+  stopKyouchousei();
   requestAnimationFrame(loop);
 }
 function spawnOhya(){
@@ -350,7 +368,10 @@ function spawnOhya(){
 }
 function levelUp(){lv++;ishibes.forEach(i=>i.lvUp());}
 function loop(t){
-  if(state!=='PLAY')return;
+  if(state!=='PLAY'){
+    stopKyouchousei();
+    return;
+  }
   const prevScale = SCALE;
   resize();
   if (SCALE !== prevScale) {
@@ -387,7 +408,19 @@ function loop(t){
     if(dist(o,player)<o.r+player.r){hp--;spark(o.x,o.y,'rgba(255,64,64,{a})');return false;}
     return true;
   });
-  if(hp<=0){gameOver();return;}
+
+  // ★ kyouchousei.mp3の制御
+  if(ohy.length > 0){
+    playKyouchousei();
+  }else{
+    stopKyouchousei();
+  }
+
+  if(hp<=0){
+    stopKyouchousei();
+    gameOver();
+    return;
+  }
   ctx.clearRect(0,0,cvs.width,cvs.height);
   aura.drw();player.drw();ishibes.forEach(i=>i.drw());items.forEach(i=>i.drw());ohy.forEach(o=>o.drw());drwPT();
   uiUpd();meterUpd();
@@ -397,6 +430,7 @@ async function gameOver(){
   ui.style.display='none';
   meterWrap.style.display='none';
   bgm.pause();
+  stopKyouchousei();
   const sc=Math.floor(score);
   finalScore.textContent=`SCORE : ${sc}`;
   yourRank.textContent='';
