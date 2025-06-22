@@ -237,6 +237,10 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     ● タバコ / ビール：オーラ半減＋200pt。<br>
     ● テンガ：オーラ 0% ＋500pt。<br>
     ● 1秒ごと +10pt、20秒ごとに LvUP（石部砂羽のみ加速）。<br>
+    ● 難易度ごとにライフ（❤）の数が異なります。<br>
+    &nbsp;&nbsp;EASY：❤3個（3回ダメージでゲームオーバー）<br>
+    &nbsp;&nbsp;NORMAL：❤2個（2回ダメージでゲームオーバー）<br>
+    &nbsp;&nbsp;HARD：❤1個（1回ダメージでゲームオーバー）<br>
     ● 難易度で大家くん上限・アイテム確率が変化。Enjoy!
   </p>
   <button id="startBtn" class="btn">START</button>
@@ -266,8 +270,8 @@ const THRESHOLD=5000,
       MSG_WIN='大矢君との1on1ミーティング回避成功!!',
       MSG_LOSE='大家くんとの1on1ミーティング開催決定!!';
 const DIFF_CFG={
-  EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375},life:5},
-  NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 },life:3},
+  EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375},life:3},
+  NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 },life:2},
   HARD  :{max:4,prob:{t:0.15,c:0.425,b:0.425},life:1}
 };
 let diff='NORMAL',CFG=DIFF_CFG[diff];
@@ -337,7 +341,15 @@ const ui=document.getElementById('ui'),meterWrap=document.getElementById('meterW
 const overlay=document.getElementById('overlay'),finalScore=document.getElementById('finalScore'),rankBody=document.getElementById('rankBody'),meetingMsg=document.getElementById('meetingMsg'),yourRank=document.getElementById('yourRank');
 const specialLink = document.getElementById('specialLink');
 const cloudMsg = document.getElementById('cloudMsg');
-function uiUpd(){ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ❤${'❤'.repeat(hp)}  Lv:${lv}`;}
+function uiUpd(){
+  // ハートは最大値に合わせて表示
+  let maxHp = CFG.life;
+  let hearts = '';
+  for(let i=0;i<maxHp;i++){
+    hearts += (i<hp) ? '❤' : '♡';
+  }
+  ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ${hearts}  Lv:${lv}`;
+}
 function meterUpd(){meterBar.style.width=`${Math.min(1,Math.max(0,(aura.r-14*SCALE)/(200*SCALE-14*SCALE)))*100}%`;}
 function setDiff(){CFG=DIFF_CFG[diff];}
 function init(){
