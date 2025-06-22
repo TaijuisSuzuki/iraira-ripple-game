@@ -64,7 +64,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 }
 #topRankingTable{width:100%;}
 /* PC用2カラムレイアウト */
-#charAndRankWrap {
+#charAndFormWrap {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -82,21 +82,17 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   flex-direction: column;
   align-items: center;
 }
-#rankCol {
+#formCol {
   flex: 1 1 0;
   min-width: 340px;
-  max-width: 600px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-#rankCol #topRankingWrap {
-  margin: 0 0 24px 0;
-}
-#rankCol #nameWrap,
-#rankCol #diffWrap,
-#rankCol #toRuleBtn,
-#rankCol #snsShareWrap {
+#formCol #nameWrap,
+#formCol #diffWrap,
+#formCol #toRuleBtn {
   width: 100%;
   max-width: 400px;
   margin-left: auto;
@@ -131,21 +127,19 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   .btn{font-size:24px;padding:10px 36px}
   #ui{font-size:18px}
   #topRankingWrap{max-width:98%;}
-  #charAndRankWrap {
+  #charAndFormWrap {
     flex-direction: column;
     gap: 0;
     max-width: 100%;
   }
-  #charIntroCol, #rankCol {
+  #charIntroCol, #formCol {
     min-width: 0;
     max-width: 100%;
     width: 100%;
   }
-  #rankCol #topRankingWrap,
-  #rankCol #nameWrap,
-  #rankCol #diffWrap,
-  #rankCol #toRuleBtn,
-  #rankCol #snsShareWrap {
+  #formCol #nameWrap,
+  #formCol #diffWrap,
+  #formCol #toRuleBtn {
     max-width: 98%;
   }
 }
@@ -157,7 +151,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <div id="meterWrap" style="display:none"><div id="meterBar"></div></div>
 <div id="charScreen" class="screen">
   <h1>CHARACTER INTRODUCTION</h1>
-  <div id="charAndRankWrap">
+  <div id="charAndFormWrap">
     <!-- 左カラム：キャラクター紹介 -->
     <div id="charIntroCol">
       <div class="char-list">
@@ -169,21 +163,8 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
         <div class="char"><img src="img/tenga.png"><div class="char-name">テンガ</div><div class="char-desc">オーラ0% +500pt</div></div>
       </div>
     </div>
-    <!-- 右カラム：ランキング＋名前入力＋スタート＋SNS -->
-    <div id="rankCol">
-      <div id="topRankingWrap">
-        <div id="topRankingTitle">GLOBAL RANKING</div>
-        <div id="topRankingTableWrap">
-          <table id="topRankingTable">
-            <thead>
-              <tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>DATE</th></tr>
-            </thead>
-            <tbody id="topRankingBody">
-              <tr><td colspan="4">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <!-- 右カラム：名前・難易度・NEXT -->
+    <div id="formCol">
       <div id="nameWrap">
         <input id="userName" type="text" placeholder="Your name" maxlength="16">
         <small style="margin-top:6px;font-size:14px;color:#ccc">※16文字以内・未入力なら Anonymous</small>
@@ -195,11 +176,25 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
         <label style="margin:0 10px"><input type="radio" name="diff" value="HARD">HARD</label>
       </div>
       <button id="toRuleBtn" class="btn">NEXT</button>
-      <div id="snsShareWrap">
-        <a class="sns-btn" id="twitterShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X(Twitter)">X</a>
-        <a class="sns-btn" id="lineShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/line.svg" alt="LINE">LINE</a>
-        <a class="sns-btn" id="fbShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook">Facebook</a>
-      </div>
+    </div>
+  </div>
+  <!-- ランキングとSNSシェアは全体の下 -->
+  <div id="topRankingWrap">
+    <div id="topRankingTitle">GLOBAL RANKING</div>
+    <div id="topRankingTableWrap">
+      <table id="topRankingTable">
+        <thead>
+          <tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>DATE</th></tr>
+        </thead>
+        <tbody id="topRankingBody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="snsShareWrap">
+      <a class="sns-btn" id="twitterShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X(Twitter)">X</a>
+      <a class="sns-btn" id="lineShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/line.svg" alt="LINE">LINE</a>
+      <a class="sns-btn" id="fbShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook">Facebook</a>
     </div>
   </div>
 </div>
