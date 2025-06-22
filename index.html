@@ -238,9 +238,9 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     ● テンガ：オーラ 0% ＋500pt。<br>
     ● 1秒ごと +10pt、20秒ごとに LvUP（石部砂羽のみ加速）。<br>
     ● 難易度ごとにライフ（❤）の数が異なります。<br>
-    &nbsp;&nbsp;EASY：❤3個（3回ダメージでゲームオーバー）<br>
-    &nbsp;&nbsp;NORMAL：❤2個（2回ダメージでゲームオーバー）<br>
-    &nbsp;&nbsp;HARD：❤1個（1回ダメージでゲームオーバー）<br>
+      EASY：❤3個（3回ダメージでゲームオーバー）<br>
+      NORMAL：❤2個（2回ダメージでゲームオーバー）<br>
+      HARD：❤1個（1回ダメージでゲームオーバー）<br>
     ● 難易度で大家くん上限・アイテム確率が変化。Enjoy!
   </p>
   <button id="startBtn" class="btn">START</button>
@@ -263,7 +263,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <audio id="bgm"    src="audio/327_BPM110.mp3"         preload="auto" loop></audio>
 <audio id="btnSE"  src="audio/botton.mp3"              preload="auto"></audio>
 <audio id="itemSE" src="audio/coin-pickup-98269.mp3"   preload="auto"></audio>
-<audio id="kyouchousei" src="audio/kyouchousei.mp3" preload="auto" loop></audio>
+<audio id="kyouchousei" src="audio/kyouchousei.mp3" preload="auto"></audio>
 <script type="module">
 let SCALE = 1.0;
 const THRESHOLD=5000,
@@ -429,14 +429,12 @@ function loop(t){
     if(dist(o,player)<o.r+player.r){hp--;spark(o.x,o.y,'rgba(255,64,64,{a})');return false;}
     return true;
   });
-
   // ★ kyouchousei.mp3の制御
   if(ohy.length > 0){
     playKyouchousei();
   }else{
     stopKyouchousei();
   }
-
   if(hp<=0){
     stopKyouchousei();
     gameOver();
@@ -501,7 +499,6 @@ document.getElementById('topBtn').onclick=()=>{
   document.getElementById('charScreen').style.display='flex';
 };
 document.getElementById('charScreen').style.display='flex';
-
 // ★ トップページランキング表示
 async function showTopRanking(){
   const topRankingBody = document.getElementById('topRankingBody');
@@ -517,7 +514,6 @@ async function showTopRanking(){
   }
 }
 showTopRanking();
-
 // SNSシェア用のJSを追加
 const shareUrl = encodeURIComponent(location.href);
 const shareText = encodeURIComponent("Iraira Ripple Gameで遊ぼう！グローバルランキングに挑戦しよう！");
