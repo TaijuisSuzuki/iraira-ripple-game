@@ -52,7 +52,20 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 .char-desc{font-size:13px;line-height:1.4}
 #nameWrap{display:flex;flex-direction:column;align-items:center;margin-top:20px}
 #userName{font-size:22px;padding:6px 10px;border-radius:6px;border:none;width:220px;text-align:center}
-#diffWrap{margin:18px 0;font-size:20px}
+#diffWrap{
+  margin:18px 0;
+  font-size:20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+#diffWrap label {
+  margin: 0 6px 0 0;
+  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+}
 #topRankingWrap{
   width:100%;max-width:600px;margin:24px auto 0;
   background:rgba(0,0,0,0.3);border-radius:10px;padding:10px 0;
@@ -97,6 +110,14 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   max-width: 400px;
   margin-left: auto;
   margin-right: auto;
+}
+.hard-info {
+  font-weight: bold;
+  color: #ffcc00;
+  font-size: 18px;
+  margin-bottom: 18px;
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 #snsShareWrap {
   display: flex;
@@ -163,17 +184,18 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
         <div class="char"><img src="img/tenga.png"><div class="char-name">テンガ</div><div class="char-desc">オーラ0% +500pt</div></div>
       </div>
     </div>
-    <!-- 右カラム：名前・難易度・NEXT -->
+    <!-- 右カラム：HARDテキスト・名前・難易度・NEXT -->
     <div id="formCol">
+      <div class="hard-info">HARDで大家くんとの1on1を回避すると…？</div>
       <div id="nameWrap">
         <input id="userName" type="text" placeholder="Your name" maxlength="16">
         <small style="margin-top:6px;font-size:14px;color:#ccc">※16文字以内・未入力なら Anonymous</small>
       </div>
       <div id="diffWrap">
         DIFFICULTY:
-        <label style="margin:0 10px"><input type="radio" name="diff" value="EASY">EASY</label>
-        <label style="margin:0 10px"><input type="radio" name="diff" value="NORMAL" checked>NORMAL</label>
-        <label style="margin:0 10px"><input type="radio" name="diff" value="HARD">HARD</label>
+        <label><input type="radio" name="diff" value="EASY">EASY</label>
+        <label><input type="radio" name="diff" value="NORMAL" checked>NORMAL</label>
+        <label><input type="radio" name="diff" value="HARD">HARD</label>
       </div>
       <button id="toRuleBtn" class="btn">NEXT</button>
     </div>
