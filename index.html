@@ -20,7 +20,16 @@ body::before{
 }
 @keyframes bgSlide{0%{transform:translateX(0)}100%{transform:translateX(200px)}}
 canvas{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:0;}
-#ui{position:fixed;top:6px;left:50%;transform:translateX(-50%);font-size:20px;pointer-events:none;z-index:5}
+#ui{
+  position:fixed;
+  top:6px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:20px;
+  pointer-events:none;
+  z-index:5;
+  white-space:nowrap;
+}
 #meterWrap{position:fixed;top:36px;left:50%;transform:translateX(-50%);width:80%;max-width:560px;height:12px;background:rgba(255,255,255,.25);border-radius:6px;z-index:5}
 #meterBar{height:100%;width:0;background:#ff3333;border-radius:6px;transition:width .1s linear}
 .screen{
@@ -257,9 +266,9 @@ const THRESHOLD=5000,
       MSG_WIN='大矢君との1on1ミーティング回避成功!!',
       MSG_LOSE='大家くんとの1on1ミーティング開催決定!!';
 const DIFF_CFG={
-  EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375}},
-  NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 }},
-  HARD  :{max:4,prob:{t:0.15,c:0.425,b:0.425}}
+  EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375},life:5},
+  NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 },life:3},
+  HARD  :{max:4,prob:{t:0.15,c:0.425,b:0.425},life:1}
 };
 let diff='NORMAL',CFG=DIFF_CFG[diff];
 const bgm   = document.getElementById('bgm');   bgm.volume   = 0.5;
@@ -344,7 +353,7 @@ function init(){
   state='PLAY';
   timer=score=0;
   lv=1;
-  hp=3;
+  hp=CFG.life; // 難易度ごとにライフをセット
   itT=0;
   last=undefined;
   overlay.style.display='none';
@@ -462,7 +471,10 @@ async function gameOver(){
 }
 let userName="Anonymous";
 document.getElementById('userName').oninput=e=>userName=e.target.value.trim()||"Anonymous";
-document.querySelectorAll('input[name="diff"]').forEach(r=>r.onchange=e=>diff=e.target.value);
+document.querySelectorAll('input[name="diff"]').forEach(r=>r.onchange=e=>{
+  diff=e.target.value;
+  setDiff();
+});
 document.getElementById('toRuleBtn').onclick=()=>{userName=document.getElementById('userName').value.trim()||"Anonymous";document.getElementById('charScreen').style.display='none';document.getElementById('ruleScreen').style.display='flex';};
 document.getElementById('startBtn').onclick=()=>{
   document.getElementById('ruleScreen').style.display='none';
