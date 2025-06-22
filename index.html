@@ -132,9 +132,13 @@ await Promise.all(Object.entries(PATH).map(([k,s])=>new Promise((ok,ng)=>{const 
 
 const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
 function calcScale() {
-  const base = 720;
   const minLen = Math.min(window.innerWidth, (visualViewport?visualViewport.height:window.innerHeight));
-  return Math.max(0.5, Math.min(2.0, minLen / base));
+  // スマホは短辺480px基準、PCは720px基準
+  if(window.innerWidth <= 640){
+    return Math.max(0.8, Math.min(2.5, minLen / 480));
+  }else{
+    return Math.max(0.5, Math.min(2.0, minLen / 720));
+  }
 }
 function resize(){
   cvs.width=innerWidth;
@@ -174,7 +178,6 @@ function init(){
   setDiff();
   player=new Player();
   aura=new Aura(player);
-  // ★ PC/スマホ判定でishibesawa数を決定
   let isMobile = window.innerWidth <= 640;
   let ishibeCount = isMobile ? 1 : 2;
   ishibes = [];
@@ -236,7 +239,6 @@ function loop(t){
     }
     return true;
   });
-  // すべてのishibesawaで判定
   ishibes.forEach(ishibe=>{
     if(dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
   });
