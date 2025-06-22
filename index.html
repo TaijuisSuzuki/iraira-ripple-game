@@ -307,9 +307,8 @@ function isThisWeek(ts){
   const d = new Date(ts);
   const now = new Date();
   const first = now.getDate() - now.getDay();
-  const last = first + 6;
-  const weekStart = new Date(now.setDate(first));
-  const weekEnd = new Date(now.setDate(last));
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), first);
+  const weekEnd = new Date(now.getFullYear(), now.getMonth(), first + 6, 23, 59, 59, 999);
   return d >= weekStart && d <= weekEnd;
 }
 
@@ -320,7 +319,6 @@ async function showTopRanking(type="daily"){
   try{
     const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(100)));
     let docs = topSnap.docs.map(d=>d.data());
-    const now = Date.now();
     if(type==="daily"){
       docs = docs.filter(v=>isToday(v.ts));
     }else if(type==="weekly"){
@@ -330,7 +328,7 @@ async function showTopRanking(type="daily"){
     topRankingBody.innerHTML=docs.map((v,i)=>{
       return `<tr>
         <td>${i+1}</td>
-        <td>${(v.name||'---').replace(/</g,'<')}</td>
+        <td>${(v.name||'---').replace(/</g,'&lt;')}</td>
         <td>${v.score}</td>
         <td>${new Date(v.ts).toLocaleString()}</td>
         <td class="ranking-comment">${v.comment?escapeHtml(v.comment):""}</td>
@@ -447,7 +445,7 @@ async function gameOver(){
       const v=d.data();
       return `<tr>
         <td>${i+1}</td>
-        <td>${(v.name||'---').replace(/</g,'<')}</td>
+        <td>${(v.name||'---').replace(/</g,'&lt;')}</td>
         <td>${v.score}</td>
         <td>${new Date(v.ts).toLocaleString()}</td>
         <td class="ranking-comment">${v.comment?escapeHtml(v.comment):""}</td>
