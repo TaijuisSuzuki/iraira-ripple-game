@@ -5,7 +5,6 @@
 <title>Iraira Ripple Game – Global Ranking Edition</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <style>
-/* ────────── 基本レイアウト ────────── */
 html,body{
   margin:0;height:100%;
   background:#5F249F;
@@ -18,32 +17,25 @@ body::before{
   animation:bgSlide 25s linear infinite;
 }
 @keyframes bgSlide{0%{transform:translateX(0)}100%{transform:translateX(200px)}}
-/* ────────── Canvas ────────── */
 canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
-/* ────────── UIバー & メーター ────────── */
 #ui{position:fixed;top:6px;left:50%;transform:translateX(-50%);font-size:20px;pointer-events:none;z-index:5}
 #meterWrap{position:fixed;top:36px;left:50%;transform:translateX(-50%);width:80%;max-width:560px;height:12px;background:rgba(255,255,255,.25);border-radius:6px;z-index:5}
 #meterBar{height:100%;width:0;background:#ff3333;border-radius:6px;transition:width .1s linear}
-/* ────────── フルスクリーン画面 ────────── */
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,.70);overflow-y:auto;-webkit-overflow-scrolling:touch;animation:fade .4s forwards;min-height:100vh;z-index:20}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .screen h1{font-size:64px;margin:8vh 0 20px;text-align:center}
-/* ────────── ボタン & 表 ────────── */
 .btn{font-size:28px;padding:12px 48px;border:none;border-radius:8px;background:#ff005d;color:#fff;cursor:pointer;transition:background .2s}
 .btn:hover{background:#ff3380}
 table{border-collapse:collapse;color:#fff;margin-top:12px}
 td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 .meeting{font-size:24px;margin:4px 0 24px;color:#ffcc00}
-/* ────────── キャラ & アイテム紹介 ────────── */
 .char-list{display:flex;flex-wrap:wrap;justify-content:center;gap:36px;max-width:760px;margin-bottom:28px}
 .char{width:130px;text-align:center}
 .char img{width:96px;height:96px;object-fit:cover;border-radius:50%;border:2px solid #fff}
 .char-name{font-weight:bold;margin-top:6px;font-size:16px}
 .char-desc{font-size:13px;line-height:1.4}
-/* ────────── 入力欄 ────────── */
 #nameWrap{display:flex;flex-direction:column;align-items:center;margin-top:20px}
 #userName{font-size:22px;padding:6px 10px;border-radius:6px;border:none;width:220px;text-align:center}
-/* ────────── モバイル文字調整 ────────── */
 @media(max-width:640px){
   .screen h1{font-size:48px}
   table{font-size:14px}
@@ -56,7 +48,6 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <canvas id="game"></canvas>
 <div id="ui" style="display:none">Loading…</div>
 <div id="meterWrap" style="display:none"><div id="meterBar"></div></div>
-<!-- ① キャラクター紹介 / 難易度選択 -->
 <div id="charScreen" class="screen">
   <h1>CHARACTER INTRODUCTION</h1>
   <div class="char-list">
@@ -79,7 +70,6 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   </div>
   <button id="toRuleBtn" class="btn">NEXT</button>
 </div>
-<!-- ② ルール -->
 <div id="ruleScreen" class="screen" style="display:none">
   <h1>HOW TO PLAY</h1>
   <p style="max-width:640px;font-size:18px;line-height:1.5;margin:0 20px 36px;text-align:left">
@@ -92,7 +82,6 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   </p>
   <button id="startBtn" class="btn">START</button>
 </div>
-<!-- ③ GAME OVER -->
 <div id="overlay" class="screen" style="display:none">
   <h1>GAME OVER</h1>
   <p id="finalScore"></p>
@@ -108,16 +97,13 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   <button id="retry" class="btn" style="margin-top:24px">Retry</button>
   <button id="topBtn" class="btn" style="margin-top:12px">TOP</button>
 </div>
-
-<!-- ★ BGM & ボタンSE & アイテムSE -->
 <audio id="bgm"    src="audio/327_BPM110.mp3"         preload="auto" loop></audio>
 <audio id="btnSE"  src="audio/botton.mp3"              preload="auto"></audio>
 <audio id="itemSE" src="audio/coin-pickup-98269.mp3"   preload="auto"></audio>
-
-<!-- ────────── JavaScript ────────── -->
 <script type="module">
 /* ==== 0. 定数・難易度設定 ==== */
-const SCALE=1.0,THRESHOLD=5000,
+let SCALE = 1.0; // 画面サイズに応じて動的に変更
+const THRESHOLD=5000,
       MSG_WIN='大矢君との1on1ミーティング回避成功!!',
       MSG_LOSE='大家くんとの1on1ミーティング開催決定!!';
 const DIFF_CFG={
@@ -133,7 +119,6 @@ const btnSE = document.getElementById('btnSE'); btnSE.volume = 0.7;
 const itemSE= document.getElementById('itemSE');itemSE.volume= 0.8;
 function playBtnSE(){ btnSE.currentTime=0; btnSE.play().catch(()=>{}); }
 function playItemSE(){itemSE.currentTime=0; itemSE.play().catch(()=>{}); }
-/* 全ボタンにクリック効果音 */
 document.addEventListener('click',e=>{
   if(e.target.closest('button')) playBtnSE();
 });
@@ -151,8 +136,20 @@ await Promise.all(Object.entries(PATH).map(([k,s])=>new Promise((ok,ng)=>{const 
 
 /* ==== 3. Canvas & 汎用描画 ==== */
 const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
-function resize(){cvs.width=innerWidth;cvs.height=(visualViewport?visualViewport.height:innerHeight);}resize();
-addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));
+function calcScale() {
+  // 画面の短辺基準でスケールを決定（基準: 720pxで1.0）
+  const base = 720;
+  const minLen = Math.min(window.innerWidth, (visualViewport?visualViewport.height:window.innerHeight));
+  return Math.max(0.5, Math.min(2.0, minLen / base));
+}
+function resize(){
+  cvs.width=innerWidth;
+  cvs.height=(visualViewport?visualViewport.height:innerHeight);
+  SCALE = calcScale();
+}
+resize();
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,200));
 function drawCircle(img,x,y,r){ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.clip();const s=r*2/img.width;ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();}
 let mouse={x:innerWidth/2,y:innerHeight/2};
 cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
@@ -165,11 +162,11 @@ function updPT(dt){for(const p of PT){p.x+=p.vx;p.y+=p.vy;p.l-=dt;}while(PT[0]&&
 function drwPT(){for(const p of PT){ctx.fillStyle=p.c.replace('{a}',(p.l/600).toFixed(2));ctx.fillRect(p.x,p.y,4,4);}}
 
 /* ==== 5. エンティティ ==== */
-class Player{constructor(){this.r=34*SCALE;this.x=cvs.width/2;this.y=cvs.height/2;}upd(){this.x=mouse.x;this.y=mouse.y;}drw(){drawCircle(IMG.player,this.x,this.y,this.r);}}
-class Ishibe{constructor(s){this.r=28*SCALE;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;this.s=s;this.t=0;this.cd=1500;this.turn();}turn(){const a=Math.random()*6.28;this.vx=Math.cos(a)*this.s;this.vy=Math.sin(a)*this.s;}lvUp(){this.s+=.5;}upd(dt){this.t+=dt;if(this.t>this.cd){this.t=0;this.turn();}this.x+=this.vx;this.y+=this.vy;if(this.x<this.r){this.x=this.r;this.vx=Math.abs(this.vx);}if(this.x>cvs.width-this.r){this.x=cvs.width-this.r;this.vx=-Math.abs(this.vx);}if(this.y<this.r){this.y=this.r;this.vy=Math.abs(this.vy);}if(this.y>cvs.height-this.r){this.y=cvs.height-this.r;this.vy=-Math.abs(this.vy);}}drw(){drawCircle(IMG.ishibe,this.x,this.y,this.r);}}
-class Ohya{constructor(x,y,s){this.r=34*SCALE;this.x=x;this.y=y;this.s=s;this.life=5000;}upd(p,dt){const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;this.x+=dx/l*this.s;this.y+=dy/l*this.s;this.life-=dt;}drw(){drawCircle(IMG.ohya,this.x,this.y,this.r);}}
-class Aura{constructor(p){this.p=p;this.r=14*SCALE;this.spd=.02*SCALE;}upd(dt){this.r+=this.spd*dt;this.x=this.p.x;this.y=this.p.y;}drw(){ctx.save();ctx.translate(this.x,this.y);const g=ctx.createRadialGradient(0,0,this.r*.8,0,0,this.r);g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,'rgba(255,0,0,.5)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,0,0,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
-class Item{constructor(t){this.type=t;this.r=24*SCALE;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;}drw(){drawCircle(IMG[this.type],this.x,this.y,this.r);}}
+class Player{constructor(){this.r=34*SCALE;this.x=cvs.width/2;this.y=cvs.height/2;}upd(){this.x=mouse.x;this.y=mouse.y;}drw(){this.r=34*SCALE;drawCircle(IMG.player,this.x,this.y,this.r);}}
+class Ishibe{constructor(s){this.r=28*SCALE;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;this.s=s;this.t=0;this.cd=1500;this.turn();}turn(){const a=Math.random()*6.28;this.vx=Math.cos(a)*this.s;this.vy=Math.sin(a)*this.s;}lvUp(){this.s+=.5;}upd(dt){this.t+=dt;if(this.t>this.cd){this.t=0;this.turn();}this.x+=this.vx;this.y+=this.vy;if(this.x<this.r){this.x=this.r;this.vx=Math.abs(this.vx);}if(this.x>cvs.width-this.r){this.x=cvs.width-this.r;this.vx=-Math.abs(this.vx);}if(this.y<this.r){this.y=this.r;this.vy=Math.abs(this.vy);}if(this.y>cvs.height-this.r){this.y=cvs.height-this.r;this.vy=-Math.abs(this.vy);}}drw(){this.r=28*SCALE;drawCircle(IMG.ishibe,this.x,this.y,this.r);}}
+class Ohya{constructor(x,y,s){this.r=34*SCALE;this.x=x;this.y=y;this.s=s;this.life=5000;}upd(p,dt){const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;this.x+=dx/l*this.s;this.y+=dy/l*this.s;this.life-=dt;}drw(){this.r=34*SCALE;drawCircle(IMG.ohya,this.x,this.y,this.r);}}
+class Aura{constructor(p){this.p=p;this.r=14*SCALE;this.spd=.02*SCALE;}upd(dt){this.r+=this.spd*dt;this.x=this.p.x;this.y=this.p.y;}drw(){this.r=Math.max(this.r,14*SCALE);ctx.save();ctx.translate(this.x,this.y);const g=ctx.createRadialGradient(0,0,this.r*.8,0,0,this.r);g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,'rgba(255,0,0,.5)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,0,0,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
+class Item{constructor(t){this.type=t;this.r=24*SCALE;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;}drw(){this.r=24*SCALE;drawCircle(IMG[this.type],this.x,this.y,this.r);}}
 
 /* ==== 6. ゲームステート ==== */
 let player,aura,ishibe,ohy,items,state,timer,last,score,lv,hp,itT;
@@ -207,7 +204,7 @@ function init(){
 }
 function spawnOhya(){
   if(ohy.length>=CFG.max)return;
-  const m=40,e=Math.floor(Math.random()*4);
+  const m=40*SCALE,e=Math.floor(Math.random()*4);
   let x,y;
   if(e===0){x=Math.random()*cvs.width;y=-m;}
   else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
@@ -220,6 +217,13 @@ function levelUp(){lv++;ishibe.lvUp();}
 /* ==== 9. メインループ ==== */
 function loop(t){
   if(state!=='PLAY')return;
+  // 画面サイズ変化時にSCALEを再計算
+  const prevScale = SCALE;
+  resize();
+  if (SCALE !== prevScale) {
+    // キャラの位置を画面中央にリセット（必要なら）
+    if(player) { player.x = cvs.width/2; player.y = cvs.height/2; }
+  }
   requestAnimationFrame(loop);
   const dt=t-(last??t);last=t;
   timer+=dt;score+=dt*.01;
@@ -234,8 +238,8 @@ function loop(t){
     items.push(new Item(tp));
   }
   items=items.filter(it=>{
-    if(dist(it,player)<it.r+player.r){          /* ★ アイテムに触れた */
-      playItemSE();                             /* ← 効果音 */
+    if(dist(it,player)<it.r+player.r){
+      playItemSE();
       if(it.type==='tenga'){aura.r=14*SCALE;score+=500;spark(it.x,it.y,'rgba(255,0,255,{a})');}
       else{aura.r=Math.max(14*SCALE,aura.r*.5);score+=200;spark(it.x,it.y,'rgba(0,255,255,{a})');}
       return false;
@@ -279,7 +283,6 @@ async function gameOver(){
   }
   meetingMsg.textContent=sc>=THRESHOLD?MSG_WIN:MSG_LOSE;
 
-  // ★ここから追加
   specialLink.style.display = 'none';
   cloudMsg.style.display = 'none';
   if (sc >= 10000) {
@@ -291,7 +294,6 @@ async function gameOver(){
       cloudMsg.style.display = 'block';
     }
   }
-  // ★ここまで追加
 }
 
 /* ==== 11. UI ハンドラ ==== */
@@ -315,8 +317,6 @@ document.getElementById('topBtn').onclick=()=>{
 /* ==== 12. タイトル表示 ==== */
 document.getElementById('charScreen').style.display='flex';
 </script>
-
-<!-- ===== ES Modules 非対応ブラウザ向け ===== -->
 <script nomodule>
 document.body.innerHTML='<div style="color:#fff;padding:30px;font-size:20px;line-height:1.6">このブラウザは ES Modules に対応していません。最新版の Chrome / Safari / Edge / Firefox などでご利用ください。</div>';
 </script>
