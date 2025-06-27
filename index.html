@@ -186,8 +186,8 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     <div id="charIntroCol">
       <div class="char-list">
         <div class="char"><img src="img/player.png"><div class="char-name">You</div><div class="char-desc">マウス / 指で操作</div></div>
-        <div class="char"><img src="img/ishibesawa.png"><div class="char-name">石部砂羽</div><div class="char-desc">オーラに触れると大家くん召喚</div></div>
-        <div class="char"><img src="img/ohyakaisei.png"><div class="char-name">大家くん</div><div class="char-desc">接触で ❤ −1</div></div>
+        <div class="char"><img src="img/ishibesawa.png"><div class="char-name">stoneswan</div><div class="char-desc">オーラに触れるとbighouse召喚</div></div>
+        <div class="char"><img src="img/ohyakaisei.png"><div class="char-name">bighouse</div><div class="char-desc">接触で ❤ −1</div></div>
         <div class="char"><img src="img/cigarette.png"><div class="char-name">タバコ</div><div class="char-desc">オーラ半減 +200pt</div></div>
         <div class="char"><img src="img/beer.png"><div class="char-name">ビール</div><div class="char-desc">オーラ半減 +200pt</div></div>
         <div class="char"><img src="img/tenga.png"><div class="char-name">テンガ</div><div class="char-desc">オーラ0% +500pt</div></div>
@@ -195,7 +195,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     </div>
     <!-- 右カラム：HARDテキスト・名前・難易度・NEXT -->
     <div id="formCol">
-      <div class="hard-info">HARDで大家くんとの1on1を回避すると…？</div>
+      <div class="hard-info">HARDでbighouseくんとの1on1を回避すると…？</div>
       <div id="nameWrap">
         <input id="userName" type="text" placeholder="Your name" maxlength="16">
         <small style="margin-top:6px;font-size:14px;color:#ccc">※16文字以内・未入力なら Anonymous</small>
@@ -233,15 +233,15 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
   <h1>HOW TO PLAY</h1>
   <p style="max-width:640px;font-size:18px;line-height:1.5;margin:0 20px 36px;text-align:left">
     ● プレイヤーをマウス / 指で操作。<br>
-    ● オーラは時間とともに拡大し、石部砂羽が触れると大家くんが増える。<br>
+    ● オーラは時間とともに拡大し、stoneswanが触れるとbighouseくんが増える。<br>
     ● タバコ / ビール：オーラ半減＋200pt。<br>
     ● テンガ：オーラ 0% ＋500pt。<br>
-    ● 1秒ごと +10pt、20秒ごとに LvUP（石部砂羽のみ加速）。<br>
+    ● 1秒ごと +10pt、20秒ごとに LvUP（stoneswanのみ加速）。<br>
     ● 難易度ごとにライフ（❤）の数が異なります。<br>
       EASY：❤3個（3回ダメージでゲームオーバー）<br>
       NORMAL：❤2個（2回ダメージでゲームオーバー）<br>
       HARD：❤1個（1回ダメージでゲームオーバー）<br>
-    ● 難易度で大家くん上限・アイテム確率が変化。Enjoy!
+    ● 難易度でbighouseくん上限・アイテム確率が変化。Enjoy!
   </p>
   <button id="startBtn" class="btn">START</button>
 </div>
@@ -267,8 +267,8 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 <script type="module">
 let SCALE = 1.0;
 const THRESHOLD=5000,
-      MSG_WIN='大矢君との1on1ミーティング回避成功!!',
-      MSG_LOSE='大家くんとの1on1ミーティング開催決定!!';
+      MSG_WIN='bighouse君との1on1ミーティング回避成功!!',
+      MSG_LOSE='bighouseくんとの1on1ミーティング開催決定!!';
 const DIFF_CFG={
   EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375},life:3},
   NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 },life:2},
