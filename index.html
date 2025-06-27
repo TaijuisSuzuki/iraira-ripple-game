@@ -1,0 +1,528 @@
+<!DOCTYPE html>Add commentMore actions
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Iraira Ripple Game – Global Ranking Edition</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  background:#5F249F;
+  background:radial-gradient(circle at 25% 30%,#7B3DFF 0%,#5F249F 40%,#3B0E6B 100%);
+  color:#fff;
+  font-family:sans-serif;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.04) 0 2px,transparent 2px 10px);
+  animation:bgSlide 25s linear infinite;
+}
+@keyframes bgSlide{0%{transform:translateX(0)}100%{transform:translateX(200px)}}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:0;}
+#ui{
+  position:fixed;
+  top:6px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:20px;
+  pointer-events:none;
+  z-index:5;
+  white-space:nowrap;
+}
+#meterWrap{position:fixed;top:36px;left:50%;transform:translateX(-50%);width:80%;max-width:560px;height:12px;background:rgba(255,255,255,.25);border-radius:6px;z-index:5}
+#meterBar{height:100%;width:0;background:#ff3333;border-radius:6px;transition:width .1s linear}
+.screen{
+  position:relative;
+  min-height:100vh;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  background:rgba(0,0,0,.70);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  animation:fade .4s forwards;
+  z-index:20;
+  box-sizing:border-box;
+  padding-bottom:40px;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.screen h1{font-size:64px;margin:8vh 0 20px;text-align:center}
+.btn{font-size:28px;padding:12px 48px;border:none;border-radius:8px;background:#ff005d;color:#fff;cursor:pointer;transition:background .2s}
+.btn:hover{background:#ff3380}
+table{border-collapse:collapse;color:#fff;margin-top:12px}
+td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
+.meeting{font-size:24px;margin:4px 0 24px;color:#ffcc00}
+.char-list{display:flex;flex-wrap:wrap;justify-content:center;gap:36px;max-width:760px;margin-bottom:28px}
+.char{width:130px;text-align:center}
+.char img{width:96px;height:96px;object-fit:cover;border-radius:50%;border:2px solid #fff}
+.char-name{font-weight:bold;margin-top:6px;font-size:16px}
+.char-desc{font-size:13px;line-height:1.4}
+#nameWrap{display:flex;flex-direction:column;align-items:center;margin-top:20px}
+#userName{font-size:22px;padding:6px 10px;border-radius:6px;border:none;width:220px;text-align:center}
+#diffWrap{
+  margin:18px 0;
+  font-size:20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+#diffWrap label {
+  margin: 0 6px 0 0;
+  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+#topRankingWrap{
+  width:100%;max-width:600px;margin:24px auto 0;
+  background:rgba(0,0,0,0.3);border-radius:10px;padding:10px 0;
+  box-sizing:border-box;
+}
+#topRankingTitle{font-size:22px;text-align:center;margin:0 0 8px 0;}
+#topRankingTableWrap{
+  max-height:400px;overflow-y:auto;width:100%;
+}
+#topRankingTable{width:100%;}
+/* PC用2カラムレイアウト */
+#charAndFormWrap {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  gap: 48px;
+}
+#charIntroCol {
+  flex: 1 1 0;
+  min-width: 340px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#formCol {
+  flex: 1 1 0;
+  min-width: 340px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#formCol #nameWrap,
+#formCol #diffWrap,
+#formCol #toRuleBtn {
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hard-info {
+  font-weight: bold;
+  color: #ffcc00;
+  font-size: 18px;
+  margin-bottom: 18px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+#snsShareWrap {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+}
+.sns-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  background: #fff;
+  color: #5F249F;
+  cursor: pointer;
+  transition: background .2s;
+  text-decoration: none;
+  font-weight: bold;
+}
+.sns-btn:hover { background: #ffccf5; color: #5F249F; }
+.sns-btn img { width: 22px; height: 22px; margin-right: 6px; }
+@media(max-width: 640px){
+  .screen h1{font-size:48px}
+  table{font-size:14px}
+  .btn{font-size:24px;padding:10px 36px}
+  #ui{font-size:18px}
+  #topRankingWrap{max-width:98%;}
+  #charAndFormWrap {
+    flex-direction: column;
+    gap: 0;
+    max-width: 100%;
+  }
+  #charIntroCol, #formCol {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  #formCol #nameWrap,
+  #formCol #diffWrap,
+  #formCol #toRuleBtn {
+    max-width: 98%;
+  }
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="ui" style="display:none">Loading…</div>
+<div id="meterWrap" style="display:none"><div id="meterBar"></div></div>
+<div id="charScreen" class="screen">
+  <h1>CHARACTER INTRODUCTION</h1>
+  <div id="charAndFormWrap">
+    <!-- 左カラム：キャラクター紹介 -->
+    <div id="charIntroCol">
+      <div class="char-list">
+        <div class="char"><img src="img/player.png"><div class="char-name">You</div><div class="char-desc">マウス / 指で操作</div></div>
+        <div class="char"><img src="img/ishibesawa.png"><div class="char-name">石部砂羽</div><div class="char-desc">オーラに触れると大家くん召喚</div></div>
+        <div class="char"><img src="img/ohyakaisei.png"><div class="char-name">大家くん</div><div class="char-desc">接触で ❤ −1</div></div>
+        <div class="char"><img src="img/cigarette.png"><div class="char-name">タバコ</div><div class="char-desc">オーラ半減 +200pt</div></div>
+        <div class="char"><img src="img/beer.png"><div class="char-name">ビール</div><div class="char-desc">オーラ半減 +200pt</div></div>
+        <div class="char"><img src="img/tenga.png"><div class="char-name">テンガ</div><div class="char-desc">オーラ0% +500pt</div></div>
+      </div>
+    </div>
+    <!-- 右カラム：HARDテキスト・名前・難易度・NEXT -->
+    <div id="formCol">
+      <div class="hard-info">HARDで大家くんとの1on1を回避すると…？</div>
+      <div id="nameWrap">
+        <input id="userName" type="text" placeholder="Your name" maxlength="16">
+        <small style="margin-top:6px;font-size:14px;color:#ccc">※16文字以内・未入力なら Anonymous</small>
+      </div>
+      <div id="diffWrap">
+        DIFFICULTY:
+        <label><input type="radio" name="diff" value="EASY">EASY</label>
+        <label><input type="radio" name="diff" value="NORMAL" checked>NORMAL</label>
+        <label><input type="radio" name="diff" value="HARD">HARD</label>
+      </div>
+      <button id="toRuleBtn" class="btn">NEXT</button>
+    </div>
+  </div>
+  <!-- ランキングとSNSシェアは全体の下 -->
+  <div id="topRankingWrap">
+    <div id="topRankingTitle">GLOBAL RANKING</div>
+    <div id="topRankingTableWrap">
+      <table id="topRankingTable">
+        <thead>
+          <tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>DATE</th></tr>
+        </thead>
+        <tbody id="topRankingBody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="snsShareWrap">
+      <a class="sns-btn" id="twitterShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X(Twitter)">X</a>
+      <a class="sns-btn" id="lineShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/line.svg" alt="LINE">LINE</a>
+      <a class="sns-btn" id="fbShare" href="#" target="_blank" rel="noopener"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook">Facebook</a>
+    </div>
+  </div>
+</div>
+<div id="ruleScreen" class="screen" style="display:none">
+  <h1>HOW TO PLAY</h1>
+  <p style="max-width:640px;font-size:18px;line-height:1.5;margin:0 20px 36px;text-align:left">
+    ● プレイヤーをマウス / 指で操作。<br>
+    ● オーラは時間とともに拡大し、石部砂羽が触れると大家くんが増える。<br>
+    ● タバコ / ビール：オーラ半減＋200pt。<br>
+    ● テンガ：オーラ 0% ＋500pt。<br>
+    ● 1秒ごと +10pt、20秒ごとに LvUP（石部砂羽のみ加速）。<br>
+    ● 難易度ごとにライフ（❤）の数が異なります。<br>
+      EASY：❤3個（3回ダメージでゲームオーバー）<br>
+      NORMAL：❤2個（2回ダメージでゲームオーバー）<br>
+      HARD：❤1個（1回ダメージでゲームオーバー）<br>
+    ● 難易度で大家くん上限・アイテム確率が変化。Enjoy!
+  </p>
+  <button id="startBtn" class="btn">START</button>
+</div>
+<div id="overlay" class="screen" style="display:none">
+  <h1>GAME OVER</h1>
+  <p id="finalScore"></p>
+  <p id="yourRank" style="font-size:22px;margin:6px 0 18px"></p>
+  <p id="meetingMsg" class="meeting"></p>
+  <div id="specialLink" style="margin:16px 0; display:none;"></div>
+  <div id="cloudMsg" style="margin:16px 0; display:none; color:#ffcc00; font-size:20px;"></div>
+  <h2>GLOBAL RANKING TOP 5</h2>
+  <table>
+    <thead><tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>DATE</th></tr></thead>
+    <tbody id="rankBody"></tbody>
+  </table>
+  <button id="retry" class="btn" style="margin-top:24px">Retry</button>
+  <button id="topBtn" class="btn" style="margin-top:12px">TOP</button>
+</div>
+<audio id="bgm"    src="audio/327_BPM110.mp3"         preload="auto" loop></audio>
+<audio id="btnSE"  src="audio/botton.mp3"              preload="auto"></audio>
+<audio id="itemSE" src="audio/coin-pickup-98269.mp3"   preload="auto"></audio>
+<audio id="kyouchousei" src="audio/kyouchousei.mp3" preload="auto"></audio>
+<script type="module">
+let SCALE = 1.0;
+const THRESHOLD=5000,
+      MSG_WIN='大矢君との1on1ミーティング回避成功!!',
+      MSG_LOSE='大家くんとの1on1ミーティング開催決定!!';
+const DIFF_CFG={
+  EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375},life:3},
+  NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 },life:2},
+  HARD  :{max:4,prob:{t:0.15,c:0.425,b:0.425},life:1}
+};
+let diff='NORMAL',CFG=DIFF_CFG[diff];
+const bgm   = document.getElementById('bgm');   bgm.volume   = 0.5;
+const btnSE = document.getElementById('btnSE'); btnSE.volume = 0.7;
+const itemSE= document.getElementById('itemSE');itemSE.volume= 0.8;
+const kyouchousei = document.getElementById('kyouchousei'); kyouchousei.volume = 0.8;
+let isKyouchouseiPlaying = false;
+function playBtnSE(){ btnSE.currentTime=0; btnSE.play().catch(()=>{}); }
+function playItemSE(){itemSE.currentTime=0; itemSE.play().catch(()=>{}); }
+function playKyouchousei(){
+  if(!isKyouchouseiPlaying){
+    kyouchousei.currentTime=0;
+    kyouchousei.play().catch(()=>{});
+    isKyouchouseiPlaying = true;
+  }
+}
+function stopKyouchousei(){
+  if(isKyouchouseiPlaying){
+    kyouchousei.pause();
+    kyouchousei.currentTime=0;
+    isKyouchouseiPlaying = false;
+  }
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('button')) playBtnSE();
+});
+import{initializeApp}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import{getFirestore,collection,addDoc,query,orderBy,limit,getDocs,where,getCountFromServer}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+initializeApp({apiKey:"AIzaSyAOgz1m_HNI670w567SMRCqWDIM7JJsAhU",authDomain:"ishibesawa-ranking.firebaseapp.com",projectId:"ishibesawa-ranking",storageBucket:"ishibesawa-ranking.appspot.com",messagingSenderId:"1083315491931",appId:"1:1083315491931:web:ca5a01a9ba8d80cec45b7e"});
+const db=getFirestore(),COL=collection(db,"scores");
+const PATH={player:'img/player.png',ishibe:'img/ishibesawa.png',ohya:'img/ohyakaisei.png',cig:'img/cigarette.png',beer:'img/beer.png',tenga:'img/tenga.png'};
+const IMG={};
+await Promise.all(Object.entries(PATH).map(([k,s])=>new Promise((ok,ng)=>{const i=new Image();i.onload=()=>{IMG[k]=i;ok();};i.onerror=ng;i.src=s;})));
+const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
+function calcScale() {
+  const minLen = Math.min(window.innerWidth, (visualViewport?visualViewport.height:window.innerHeight));
+  if(window.innerWidth <= 640){
+    return Math.max(0.8, Math.min(2.5, minLen / 480));
+  }else{
+    return Math.max(0.5, Math.min(2.0, minLen / 720));
+  }
+}
+function resize(){
+  cvs.width=innerWidth;
+  cvs.height=(visualViewport?visualViewport.height:innerHeight);
+  SCALE = calcScale();
+}
+resize();
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,200));
+function drawCircle(img,x,y,r){ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.clip();const s=r*2/img.width;ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();}
+let mouse={x:innerWidth/2,y:innerHeight/2};
+cvs.onmousemove=e=>{const r=cvs.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;};
+cvs.ontouchmove=e=>{e.preventDefault();const r=cvs.getBoundingClientRect();mouse.x=e.touches[0].clientX-r.left;mouse.y=e.touches[0].clientY-r.top;},{passive:false};
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const PT=[];function spark(x,y,c){for(let i=0;i<18;i++)PT.push({x,y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,l:600,c});}
+function updPT(dt){for(const p of PT){p.x+=p.vx;p.y+=p.vy;p.l-=dt;}while(PT[0]&&PT[0].l<=0)PT.shift();}
+function drwPT(){for(const p of PT){ctx.fillStyle=p.c.replace('{a}',(p.l/600).toFixed(2));ctx.fillRect(p.x,p.y,4,4);}}
+class Player{constructor(){this.r=34*SCALE;this.x=cvs.width/2;this.y=cvs.height/2;}upd(){this.x=mouse.x;this.y=mouse.y;}drw(){this.r=34*SCALE;drawCircle(IMG.player,this.x,this.y,this.r);}}
+class Ishibe{constructor(s){this.r=28*SCALE;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;this.s=s;this.t=0;this.cd=1500;this.turn();}turn(){const a=Math.random()*6.28;this.vx=Math.cos(a)*this.s;this.vy=Math.sin(a)*this.s;}lvUp(){this.s+=.5;}upd(dt){this.t+=dt;if(this.t>this.cd){this.t=0;this.turn();}this.x+=this.vx;this.y+=this.vy;if(this.x<this.r){this.x=this.r;this.vx=Math.abs(this.vx);}if(this.x>cvs.width-this.r){this.x=cvs.width-this.r;this.vx=-Math.abs(this.vx);}if(this.y<this.r){this.y=this.r;this.vy=Math.abs(this.vy);}if(this.y>cvs.height-this.r){this.y=cvs.height-this.r;this.vy=-Math.abs(this.vy);}}drw(){this.r=28*SCALE;drawCircle(IMG.ishibe,this.x,this.y,this.r);}}
+class Ohya{constructor(x,y,s){this.r=34*SCALE;this.x=x;this.y=y;this.s=s;this.life=5000;}upd(p,dt){const dx=p.x-this.x,dy=p.y-this.y,l=Math.hypot(dx,dy)||1;this.x+=dx/l*this.s;this.y+=dy/l*this.s;this.life-=dt;}drw(){this.r=34*SCALE;drawCircle(IMG.ohya,this.x,this.y,this.r);}}
+class Aura{constructor(p){this.p=p;this.r=14*SCALE;this.spd=.02*SCALE;}upd(dt){this.r+=this.spd*dt;this.x=this.p.x;this.y=this.p.y;}drw(){this.r=Math.max(this.r,14*SCALE);ctx.save();ctx.translate(this.x,this.y);const g=ctx.createRadialGradient(0,0,this.r*.8,0,0,this.r);g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,'rgba(255,0,0,.5)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,0,0,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
+class Item{constructor(t){this.type=t;this.r=24*SCALE;this.x=Math.random()*cvs.width;this.y=Math.random()*cvs.height;}drw(){this.r=24*SCALE;drawCircle(IMG[this.type],this.x,this.y,this.r);}}
+let player,aura,ishibes,ohy,items,state,timer,last,score,lv,hp,itT;
+const ui=document.getElementById('ui'),meterWrap=document.getElementById('meterWrap'),meterBar=document.getElementById('meterBar');
+const overlay=document.getElementById('overlay'),finalScore=document.getElementById('finalScore'),rankBody=document.getElementById('rankBody'),meetingMsg=document.getElementById('meetingMsg'),yourRank=document.getElementById('yourRank');
+const specialLink = document.getElementById('specialLink');
+const cloudMsg = document.getElementById('cloudMsg');
+function uiUpd(){
+  // ハートは最大値に合わせて表示
+  let maxHp = CFG.life;
+  let hearts = '';
+  for(let i=0;i<maxHp;i++){
+    hearts += (i<hp) ? '❤' : '♡';
+  }
+  ui.textContent=`Time:${(timer/1000).toFixed(1)}  Score:${Math.floor(score)}  ${hearts}  Lv:${lv}`;
+}
+function meterUpd(){meterBar.style.width=`${Math.min(1,Math.max(0,(aura.r-14*SCALE)/(200*SCALE-14*SCALE)))*100}%`;}
+function setDiff(){CFG=DIFF_CFG[diff];}
+function init(){
+  setDiff();
+  player=new Player();
+  aura=new Aura(player);
+  let isMobile = window.innerWidth <= 640;
+  let ishibeCount = isMobile ? 1 : 3; // PCは3体、スマホは1体
+  ishibes = [];
+  for(let i=0;i<ishibeCount;i++) ishibes.push(new Ishibe(4));
+  ohy=[];
+  items=[];
+  state='PLAY';
+  timer=score=0;
+  lv=1;
+  hp=CFG.life; // 難易度ごとにライフをセット
+  itT=0;
+  last=undefined;
+  overlay.style.display='none';
+  ui.style.display='block';
+  meterWrap.style.display='block';
+  uiUpd();
+  meterUpd();
+  bgm.currentTime=0; bgm.play().catch(()=>{});
+  stopKyouchousei();
+  requestAnimationFrame(loop);
+}
+function spawnOhya(){
+  if(ohy.length>=CFG.max)return;
+  const m=40*SCALE,e=Math.floor(Math.random()*4);
+  let x,y;
+  if(e===0){x=Math.random()*cvs.width;y=-m;}
+  else if(e===1){x=cvs.width+m;y=Math.random()*cvs.height;}
+  else if(e===2){x=Math.random()*cvs.width;y=cvs.height+m;}
+  else{x=-m;y=Math.random()*cvs.height;}
+  ohy.push(new Ohya(x,y,ishibes[0].s*0.75));
+}
+function levelUp(){lv++;ishibes.forEach(i=>i.lvUp());}
+function loop(t){
+  if(state!=='PLAY'){
+    stopKyouchousei();
+    return;
+  }
+  const prevScale = SCALE;
+  resize();
+  if (SCALE !== prevScale) {
+    if(player) { player.x = cvs.width/2; player.y = cvs.height/2; }
+  }
+  requestAnimationFrame(loop);
+  const dt=t-(last??t);last=t;
+  timer+=dt;score+=dt*.01;
+  player.upd();aura.upd(dt);ishibes.forEach(i=>i.upd(dt));updPT(dt);
+  if(Math.floor(timer/20000)+1>lv)levelUp();
+  itT+=dt;
+  if(itT>3000){
+    itT=0;
+    const r=Math.random();let tp='beer';
+    if(r<CFG.prob.t)tp='tenga';
+    else if(r<CFG.prob.t+CFG.prob.c)tp='cig';
+    items.push(new Item(tp));
+  }
+  items=items.filter(it=>{
+    if(dist(it,player)<it.r+player.r){
+      playItemSE();
+      if(it.type==='tenga'){aura.r=14*SCALE;score+=500;spark(it.x,it.y,'rgba(255,0,255,{a})');}
+      else{aura.r=Math.max(14*SCALE,aura.r*.5);score+=200;spark(it.x,it.y,'rgba(0,255,255,{a})');}
+      return false;
+    }
+    return true;
+  });
+  ishibes.forEach(ishibe=>{
+    if(dist(ishibe,player)<aura.r+ishibe.r)spawnOhya();
+  });
+  ohy=ohy.filter(o=>{
+    o.upd(player,dt);
+    if(o.life<=0){spark(o.x,o.y,'rgba(255,255,0,{a})');return false;}
+    if(dist(o,player)<o.r+player.r){hp--;spark(o.x,o.y,'rgba(255,64,64,{a})');return false;}
+    return true;
+  });
+  // ★ kyouchousei.mp3の制御
+  if(ohy.length > 0){
+    playKyouchousei();
+  }else{
+    stopKyouchousei();
+  }
+  if(hp<=0){
+    stopKyouchousei();
+    gameOver();
+    return;
+  }
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  aura.drw();player.drw();ishibes.forEach(i=>i.drw());items.forEach(i=>i.drw());ohy.forEach(o=>o.drw());drwPT();
+  uiUpd();meterUpd();
+}
+async function gameOver(){
+  state='END';
+  ui.style.display='none';
+  meterWrap.style.display='none';
+  bgm.pause();
+  stopKyouchousei();
+  const sc=Math.floor(score);
+  finalScore.textContent=`SCORE : ${sc}`;
+  yourRank.textContent='';
+  overlay.style.display='flex';
+  rankBody.innerHTML='<tr><td colspan="4">ランキング読み込み中…</td></tr>';
+  try{
+    await addDoc(COL,{score:sc,name:userName,ts:Date.now()});
+    const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(5)));
+    rankBody.innerHTML=topSnap.docs.map((d,i)=>{const v=d.data();return`<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'<')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")||`<tr><td colspan="4">No record</td></tr>`;
+    const cnt=await getCountFromServer(query(COL,where("score",">",sc)));
+    yourRank.textContent=`YOUR GLOBAL RANK : ${cnt.data().count+1}`;
+  }catch(e){
+    console.error(e);
+    rankBody.innerHTML='<tr><td colspan="4">Error</td></tr>';
+    yourRank.textContent='RANK : ―';
+  }
+  meetingMsg.textContent=sc>=THRESHOLD?MSG_WIN:MSG_LOSE;
+  specialLink.style.display = 'none';
+  cloudMsg.style.display = 'none';
+  if (sc >= 10000) {
+    if (diff === 'HARD') {
+      specialLink.innerHTML = `<a href="https://drive.google.com/drive/folders/1IWouCard2EK7Zy3q0HicnoFFehnc7ei5?usp=sharing" target="_blank" style="font-size:22px;color:#ffcc00;text-decoration:underline;">🎉 秘密のリンクをゲット！こちらをクリック 🎉</a>`;
+      specialLink.style.display = 'block';
+    } else {
+      cloudMsg.textContent = 'ハードモードで10000点を超えられれば、そこは至極の雲の上...';
+      cloudMsg.style.display = 'block';
+    }
+  }
+}
+let userName="Anonymous";
+document.getElementById('userName').oninput=e=>userName=e.target.value.trim()||"Anonymous";
+document.querySelectorAll('input[name="diff"]').forEach(r=>r.onchange=e=>{
+  diff=e.target.value;
+  setDiff();
+});
+document.getElementById('toRuleBtn').onclick=()=>{userName=document.getElementById('userName').value.trim()||"Anonymous";document.getElementById('charScreen').style.display='none';document.getElementById('ruleScreen').style.display='flex';};
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('ruleScreen').style.display='none';
+  init();
+};
+document.getElementById('retry').onclick=()=>{
+  overlay.style.display='none';
+  init();
+};
+document.getElementById('topBtn').onclick=()=>{
+  overlay.style.display='none';
+  document.getElementById('charScreen').style.display='flex';
+};
+document.getElementById('charScreen').style.display='flex';
+// ★ トップページランキング表示
+async function showTopRanking(){
+  const topRankingBody = document.getElementById('topRankingBody');
+  topRankingBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+  try{
+    const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(50)));
+    topRankingBody.innerHTML=topSnap.docs.map((d,i)=>{
+      const v=d.data();
+      return `<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'<')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;
+    }).join("")||`<tr><td colspan="4">No record</td></tr>`;
+  }catch(e){
+    topRankingBody.innerHTML='<tr><td colspan="4">Error</td></tr>';
+  }
+}
+showTopRanking();
+// SNSシェア用のJSを追加
+const shareUrl = encodeURIComponent(location.href);
+const shareText = encodeURIComponent("Iraira Ripple Gameで遊ぼう！グローバルランキングに挑戦しよう！");
+document.getElementById('twitterShare').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+document.getElementById('lineShare').href = `https://social-plugins.line.me/lineit/share?url=${shareUrl}`;
+document.getElementById('fbShare').href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+</script>
+<script nomodule>
+document.body.innerHTML='<div style="color:#fff;padding:30px;font-size:20px;line-height:1.6">このブラウザは ES Modules に対応していません。最新版の Chrome / Safari / Edge / Firefox などでご利用ください。</div>';
+</script>
+</body>
+</html>
