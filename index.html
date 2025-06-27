@@ -1,10 +1,11 @@
-<!DOCTYPE html>Add commentMore actions
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <title>Iraira Ripple Game – Global Ranking Edition</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <style>
+/* ...（CSSは元のまま省略せず貼り付けてください）... */
 html,body{
   margin:0;
   height:100%;
@@ -13,6 +14,7 @@ html,body{
   color:#fff;
   font-family:sans-serif;
 }
+/* ...（以下CSSは元のまま）... */
 body::before{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
   background:repeating-linear-gradient(135deg,rgba(255,255,255,.04) 0 2px,transparent 2px 10px);
@@ -195,7 +197,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
     </div>
     <!-- 右カラム：HARDテキスト・名前・難易度・NEXT -->
     <div id="formCol">
-      <div class="hard-info">HARDでbighouseくんとの1on1を回避すると…？</div>
+      <div class="hard-info">HARDでbighouseくんとの1on1ミーティングを回避すると…？</div>
       <div id="nameWrap">
         <input id="userName" type="text" placeholder="Your name" maxlength="16">
         <small style="margin-top:6px;font-size:14px;color:#ccc">※16文字以内・未入力なら Anonymous</small>
@@ -268,7 +270,7 @@ td,th{padding:4px 10px;border-bottom:1px solid #444;text-align:center}
 let SCALE = 1.0;
 const THRESHOLD=5000,
       MSG_WIN='bighouse君との1on1ミーティング回避成功!!',
-      MSG_LOSE='bighouseくんとの1on1ミーティング開催決定!!';
+      MSG_LOSE='bighouse君との1on1ミーティング開催決定!!';
 const DIFF_CFG={
   EASY  :{max:2,prob:{t:0.25,c:0.375,b:0.375},life:3},
   NORMAL:{max:3,prob:{t:0.20,c:0.40 ,b:0.40 },life:2},
@@ -299,12 +301,19 @@ function stopKyouchousei(){
 document.addEventListener('click',e=>{
   if(e.target.closest('button')) playBtnSE();
 });
-import{initializeApp}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import{getFirestore,collection,addDoc,query,orderBy,limit,getDocs,where,getCountFromServer}from"https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-initializeApp({apiKey:"AIzaSyAOgz1m_HNI670w567SMRCqWDIM7JJsAhU",authDomain:"stoneswan-ranking.firebaseapp.com",projectId:"stoneswan-ranking",storageBucket:"stoneswan-ranking.appspot.com",messagingSenderId:"1083315491931",appId:"1:1083315491931:web:ca5a01a9ba8d80cec45b7e"});
-const db=getFirestore(),COL=collection(db,"scores");
-const PATH={player:'img/player.png',ishibe:'img/stoneswan.png',ohya:'img/bighouse.png',cig:'img/cigarette.png',beer:'img/beer.png',tenga:'img/tenga.png'};
-const IMG={};
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where, getCountFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+initializeApp({
+  apiKey:"AIzaSyAOgz1m_HNI670w567SMRCqWDIM7JJsAhU",
+  authDomain:"stoneswan-ranking.firebaseapp.com",
+  projectId:"stoneswan-ranking",
+  storageBucket:"stoneswan-ranking.appspot.com",
+  messagingSenderId:"1083315491931",
+  appId:"1:1083315491931:web:ca5a01a9ba8d80cec45b7e"
+});
+const db = getFirestore(), COL = collection(db, "scores");
+const PATH = {player:'img/player.png',ishibe:'img/stoneswan.png',ohya:'img/bighouse.png',cig:'img/cigarette.png',beer:'img/beer.png',tenga:'img/tenga.png'};
+const IMG = {};
 await Promise.all(Object.entries(PATH).map(([k,s])=>new Promise((ok,ng)=>{const i=new Image();i.onload=()=>{IMG[k]=i;ok();};i.onerror=ng;i.src=s;})));
 const cvs=document.getElementById('game'),ctx=cvs.getContext('2d');
 function calcScale() {
@@ -456,9 +465,24 @@ async function gameOver(){
   overlay.style.display='flex';
   rankBody.innerHTML='<tr><td colspan="4">ランキング読み込み中…</td></tr>';
   try{
-    await addDoc(COL,{score:sc,name:userName,ts:Date.now()});
+    // Firestoreのサーバータイムスタンプで保存
+    await addDoc(COL,{score:sc,name:userName,ts:serverTimestamp()});
+    // 最新のランキング取得
     const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(5)));
-    rankBody.innerHTML=topSnap.docs.map((d,i)=>{const v=d.data();return`<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'<')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;}).join("")||`<tr><td colspan="4">No record</td></tr>`;
+    rankBody.innerHTML=topSnap.docs.map((d,i)=>{
+      const v=d.data();
+      // 日付の型に対応
+      let dateStr = "";
+      if(v.ts && typeof v.ts.toDate === "function"){
+        dateStr = v.ts.toDate().toLocaleString();
+      }else if(typeof v.ts === "number"){
+        dateStr = new Date(v.ts).toLocaleString();
+      }else{
+        dateStr = "";
+      }
+      return `<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'&lt;')}</td><td>${v.score}</td><td>${dateStr}</td></tr>`;
+    }).join("")||`<tr><td colspan="4">No record</td></tr>`;
+    // 自分の順位
     const cnt=await getCountFromServer(query(COL,where("score",">",sc)));
     yourRank.textContent=`YOUR GLOBAL RANK : ${cnt.data().count+1}`;
   }catch(e){
@@ -507,7 +531,16 @@ async function showTopRanking(){
     const topSnap=await getDocs(query(COL,orderBy("score","desc"),limit(50)));
     topRankingBody.innerHTML=topSnap.docs.map((d,i)=>{
       const v=d.data();
-      return `<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'<')}</td><td>${v.score}</td><td>${new Date(v.ts).toLocaleString()}</td></tr>`;
+      // 日付の型に対応
+      let dateStr = "";
+      if(v.ts && typeof v.ts.toDate === "function"){
+        dateStr = v.ts.toDate().toLocaleString();
+      }else if(typeof v.ts === "number"){
+        dateStr = new Date(v.ts).toLocaleString();
+      }else{
+        dateStr = "";
+      }
+      return `<tr><td>${i+1}</td><td>${(v.name||'---').replace(/</g,'&lt;')}</td><td>${v.score}</td><td>${dateStr}</td></tr>`;
     }).join("")||`<tr><td colspan="4">No record</td></tr>`;
   }catch(e){
     topRankingBody.innerHTML='<tr><td colspan="4">Error</td></tr>';
